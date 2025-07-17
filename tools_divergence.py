@@ -184,18 +184,25 @@ def plot_divergence(var_list, neural_activity, times_relate, rule_name, figname,
     sns.set(style='whitegrid')
         
     # 原始数据
-    plt.errorbar(t_centers, meandivergence, yerr=sem_divergence, 
-                 label='Original Mean Divergence', 
-                 color=plot_para['color'],
-                 linewidth=2)
-    
+    # plt.errorbar(t_centers, meandivergence, yerr=sem_divergence, 
+    #              fmt='none',uplims=True, lolims=True, 
+    #              label='Original Mean Divergence', 
+    #              color=plot_para['color'],
+    #              linewidth=2)
+    # 绘制平滑曲线
+    plt.plot(t_centers, meandivergence, label='Original', 
+             linewidth=2,color=plot_para['color'])
     # Shuffle数据
-    plt.errorbar(t_centers, meandivergence_shuffle_avg, yerr=sem_divergence_shuffle, 
-                 label='Shuffled Mean Divergence', 
-                 linestyle='--', 
-                 color=plot_para['color'],
-                 linewidth=2)
-    
+    # plt.errorbar(t_centers, meandivergence_shuffle_avg, yerr=sem_divergence_shuffle, 
+    #              fmt='none',uplims=True, lolims=True, 
+    #              label='Shuffled Mean Divergence', 
+    #              linestyle='--', 
+    #              color=plot_para['color'],
+                 # linewidth=2)
+    # 绘制平滑曲线
+    plt.plot(t_centers, meandivergence_shuffle_avg, label='Original',
+             linestyle='--', color=plot_para['color'],linewidth=2)
+
     # 添加填充区域（可选）
     plt.fill_between(t_centers, 
                      meandivergence - sem_divergence,

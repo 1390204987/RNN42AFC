@@ -73,7 +73,7 @@ def _neuralactivity_dm(model_dir, rule, stim_mod, params_list, batch_shape):
     modelparams = torch.load(model_dir,weights_only=False)
     state_dict = modelparams["state_dict"]
     hp = modelparams["hp"]
-    hp["sigma_x"] = 0.5
+    hp["sigma_x"] = 0.1
     hp['sigma_rec1']=0.1
     hp['sigma_rec2']=0.1
     # hp['fforwardstren']=0.1
@@ -115,7 +115,7 @@ def _neuralactivity_dm(model_dir, rule, stim_mod, params_list, batch_shape):
         
     # e_size = net.rnn.e_size
     # return activity, test_trial, state_dict ,y_hat,y_loc,e_size,
-    return activity, test_trial, state_dict ,y_hat,y_loc,effective_weight,hp
+    return activity, test_trial, state_dict, y_hat,y_loc,effective_weight,hp
 
 def neuralactivity_delaysac(model_dir,**kwargs):
     rule = 'delaysaccade'
@@ -290,14 +290,20 @@ def neuralactivity_color_dm(model_dir,**kwargs):
         # stim1_loc = np.array([-25,-24,-23,23,24,25])*6/360*np.pi+np.pi
         n_rep = 100
         unique_n_stim = len(stim1_loc)
+        condition_list = {'stim_coh':stim1_coh,'stim_loc':stim1_loc}
     elif stim_mod ==2:
-        stim1_coh = np.array([0.5,0.15,0.05,0,0.05,0.15,0.5])*0.05
-        stim1_loc = np.array([0,0,0,0,np.pi,np.pi,np.pi])
+        unique_stim1_coh = np.array([1,0.1,0.05,0])
+        unique_stim1_loc = np.array([-12,12])*6/360*np.pi+np.pi
+        relative_stim1_loc = np.outer(unique_stim1_coh, np.sign(unique_stim1_loc - np.pi)).flatten()+np.pi
+        stim1_coh = np.repeat(unique_stim1_coh, 2)
+        stim1_loc = np.tile(unique_stim1_loc, 4) 
+        relative_stim1_loc = stim1_coh*np.sign(stim1_loc-np.pi)+np.pi
         n_rep = 100
-        unique_n_stim = len(stim1_coh)
+        unique_n_stim = len(unique_stim1_coh)*len(unique_stim1_loc)
+        condition_list = {'stim_coh':unique_stim1_coh,'stim_loc':unique_stim1_loc}
     batch_size = n_rep*unique_n_stim
     batch_shape = (n_rep,unique_n_stim)
-    condition_list = {'stim_coh':stim1_coh,'stim_loc':stim1_loc}
+
     ind_stim_loc,ind_stim = np.unravel_index(range(batch_size),batch_shape)
     
     stim1_locs = stim1_loc[ind_stim]
@@ -326,7 +332,7 @@ def neuralactivity_color_dm(model_dir,**kwargs):
     if stim_mod == 1:
         xdatas = [stim1_loc]
     elif stim_mod == 2:
-        xdatas = [stim1_coh]
+        xdatas = [relative_stim1_loc]
     neural_activity,test_trial,state_dict,y_hat,y_loc,effective_weight,hp = _neuralactivity_dm(model_dir, rule,stim_mod, params_list, batch_shape)    
     # neural_activity,test_trial,state_dict,y_hat,y_loc,e_size = _neuralactivity_dm(model_dir, rule,stim_mod, params_list, batch_shape)
     neural_activity = neural_activity.detach().numpy()
@@ -334,6 +340,7 @@ def neuralactivity_color_dm(model_dir,**kwargs):
     dt = test_trial.dt
     times_relate = {'stim_ons':stim1_ons,'dt':dt,'stim_dur':stim1_times}  
     
+    X = test_trial.x
     y_dir = get_y_direction(y_hat,y_loc) 
     # only analysis trials with the output direction belongs to the given target 
     complete_trial_ind = np.where(np.isnan(y_dir)==False)
@@ -375,7 +382,7 @@ def neuralactivity_color_dm(model_dir,**kwargs):
     if len(np.unique(stim1_coh))==1:
         unique_heading = np.unique(stim1_loc)
     else:
-        unique_heading = np.unique(np.sign(stim1_loc)*stim1_coh)
+        unique_heading = relative_stim1_loc
  
     in_stim = ind_stim[complete_trial_ind]
     heading_per_trial = np.full_like(in_stim,np.nan,dtype=np.float32)
@@ -626,7 +633,7 @@ def plot_corr_heading_color_sac(heading_selectivity,saccade_selectivity,color_se
 # model_dir = './checkpoint/2AFC802hiddennet2keep.t7'    
 for i in [0]:
     figname_suffix = f'checkgpu/{i}'
-    model_dir = './checkpoint_batchnew1/0420colorhdnet4.t7'         
+    model_dir = './checkpoint/checkgpu.t7'         
     
     neuralactivity_color_dm(model_dir,figname_append=figname_suffix) 
     # psychometric_color_dm(model_dir,figname_append=figname_suffix)

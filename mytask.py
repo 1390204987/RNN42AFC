@@ -142,7 +142,7 @@ class Trial(object):
         
         # self.x += self.config['rng'].randn(*self.x.shape)*self._sigma_x    
         self.x[:,:,:n_heading] += x_noise*self._sigma_x
-        self.x[:,:,:n_heading] += x_noise*self._sigma_x*np.mean(self.x[:,:,1:n_heading],axis=2,keepdims=True)
+        # self.x[:,:,:n_heading] += x_noise*self._sigma_x*np.mean(self.x[:,:,1:n_heading],axis=2,keepdims=True)
         # self.x += np.random.randn(*self.x.shape)*self._sigma_x*np.sqrt(self.x)
     def add_c_mask(self, pre_offs, post_ons):
         """Add a cost mask.
@@ -438,8 +438,8 @@ def coltargdm(config, mode,stim_mod, **kwargs):
         # stim1_coh_range = np.array([0.08])
         # stim1_locs = np.random.uniform(2/3*np.pi,4/3*np.pi,int(batch_size))
         # stim1_coh_range = np.random.uniform(0.01,0.08,batch_size)
-        stim1_coh_range = np.random.uniform(0.05,0.08,batch_size)
-        stim1_coh_range *= 30
+        stim1_coh_range = np.random.uniform(0,2,batch_size)
+        stim1_coh_range *= 1
         stims1_coh  = rng.choice(stim1_coh_range, (batch_size,))
         
         # Color stimulus
@@ -493,7 +493,7 @@ def coltargdm(config, mode,stim_mod, **kwargs):
     check_ons = fix_offs + int(100/dt)       
     
     stim1_cats = stim1_locs<np.pi # Category of stimulus 1
-    heading0_loc = stim1_locs==0
+    heading0_loc = stim1_locs==np.pi
     stim1_cats[heading0_loc] = rng.choice([np.pi,0]) 
     trial = Trial(config, tdim, batch_size,stim1_ons)
 

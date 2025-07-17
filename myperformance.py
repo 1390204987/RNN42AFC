@@ -247,7 +247,9 @@ def plot_psychometric_choice(xdatas,ydatas,labels,colors,**kwargs):
         ax.plot(xdata,ydata,'o',markersize=3.5,color = colors[i])
         
         try:
-            x_plot = np.linspace(xdata[0],xdata[-1],100)
+            xmin = np.min(xdata)
+            xmax = np.max(xdata)
+            x_plot = np.linspace(xmin,xmax,100)
             (mu,sigma),_ = curve_fit(cdf_gaussian,xdata,ydata,bounds=([-0.5,0.001],[0.5,10]))
             fits.append((mu,sigma))
             ax.plot(x_plot, cdf_gaussian(x_plot,mu,sigma), label = labels[i],
@@ -260,9 +262,9 @@ def plot_psychometric_choice(xdatas,ydatas,labels,colors,**kwargs):
     threshold = z75 * sigma
     plt.xlabel('heading',fontsize=fs)
     plt.ylim([-0.05,1.05])
-    plt.xlim([xdata[0]*1.1,xdata[-1]*1.1])
+    plt.xlim([xmin*1.1,xmax*1.1])
     plt.yticks([0,0.5,1])
-    plt.xticks([xdata[0], 0, xdata[-1]])
+    plt.xticks([xmin, 0, xmax])
     if 'no_ylabel' in kwargs and kwargs['no_ylabel']:
         plt.yticks([0,0.5,1],['','',''])
     else:
@@ -284,7 +286,7 @@ def plot_psychometric_choice(xdatas,ydatas,labels,colors,**kwargs):
     ax.xaxis.set_ticks_position('bottom')
     ax.yaxis.set_ticks_position('left')
     
-    text_x = xdata[-1] * 0.05  # 文字放在左侧
+    text_x = xmax * 0.05  # 文字放在左侧
     text_y = 0.95              # 接近顶部
     if 'correct_rate' in kwargs:
         correct_rate =  kwargs['correct_rate'] 
