@@ -227,8 +227,8 @@ def plot_divergence(var_list, neural_activity, times_relate, rule_name, figname,
     plt.scatter(significant_time_points, y_loc, color=plot_para['color'], marker='*', label='p < 0.001')
 
     
-    plt.axvline(x=0, color='r', linestyle='--', label='Stim Onset')
-    plt.axvline(x=stim_end, color='g', linestyle='--', label='Stim End')
+    plt.axvline(x=0, color='k', linestyle='--', label='Stim Onset')
+    plt.axvline(x=stim_end, color='k', linestyle='--', label='Stim End')
     plt.xlabel('Time (s)')
     plt.ylabel('Divergence')
     # plt.title(f'Divergence between Preferred and Non-preferred Stimuli (p-value: {p_val:.4f})')

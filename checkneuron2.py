@@ -73,7 +73,7 @@ def _neuralactivity_dm(model_dir, rule, stim_mod, params_list, batch_shape):
     modelparams = torch.load(model_dir,weights_only=False)
     state_dict = modelparams["state_dict"]
     hp = modelparams["hp"]
-    hp["sigma_x"] = 0.1
+    hp["sigma_x"] = 0.5
     hp['sigma_rec1']=0.1
     hp['sigma_rec2']=0.1
     # hp['fforwardstren']=0.1
@@ -554,24 +554,26 @@ def neuralactivity_color_dm(model_dir,**kwargs):
     plt.savefig("./lunwenfigure/h2population_choice.svg")
     
     
-    h1para = {'color':[0,0,1]}
+    h1abs_para = {'color': [x/255 for x in [139,10,80]]}
+    h1sac_para = {'color': [x/255 for x in [0,0,139]]}
     if not hp.get("hidden_size2") is None:
-        h2para = {'color':[1,0,0]}
+        h2abs_para = {'color': [x/255 + y*0.75*(1-1*2/4) for x, y in zip([139,10,80], [1,1,1])]}
+        h2sac_para = {'color': [x/255 + y*0.75*(1-1*2/4) for x, y in zip([0,0,139], [1,1,1])]}
     # plt.figure(11,figsize=(10, 16))# plot saccade divergence
     plt.figure(figsize=(10, 6))  # 宽度为10，高度为5
     figname = 'saccade_div'
     plt.title('saccade_div')
-    L1_sactime = get_divergence(sacdir_list[select_0heading],neural_activity[:,select_0heading,:hidden1_size],times_relate,rule_name,rule=rule,figname=figname,figname_append = kwargs['figname_append'],iarea=1,para=h1para)
-    plot_divergence(sacdir_list[select_0heading],neural_activity[:,select_0heading,:hidden1_size],times_relate,rule_name,rule=rule,figname=figname,figname_append = kwargs['figname_append'],iarea=1,para=h1para)
+    L1_sactime = get_divergence(sacdir_list[select_0heading],neural_activity[:,select_0heading,:hidden1_size],times_relate,rule_name,rule=rule,figname=figname,figname_append = kwargs['figname_append'],iarea=1,para=h1sac_para)
+    plot_divergence(sacdir_list[select_0heading],neural_activity[:,select_0heading,:hidden1_size],times_relate,rule_name,rule=rule,figname=figname,figname_append = kwargs['figname_append'],iarea=1,para=h1sac_para)
     # plot_divergence(sacdir_list,neural_activity[:,:,:hidden1_size],times_relate,rule_name,rule=rule,figname=figname,figname_append = kwargs['figname_append'],iarea=1,para=h1para)
     SetFigure(15)
     plt.show()
     if not hp.get("hidden_size2") is None:
-        plot_divergence(sacdir_list[select_0heading],neural_activity[:,select_0heading,hidden1_size:],times_relate,rule_name,rule=rule,figname=figname,figname_append = kwargs['figname_append'],iarea=2,para=h2para)
+        plot_divergence(sacdir_list[select_0heading],neural_activity[:,select_0heading,hidden1_size:],times_relate,rule_name,rule=rule,figname=figname,figname_append = kwargs['figname_append'],iarea=2,para=h2sac_para)
         SetFigure(15)
         plt.show()
         # plot_divergence(sacdir_list,neural_activity[:,:,hidden1_size:],times_relate,rule_name,rule=rule,figname=figname,figname_append = kwargs['figname_append'],iarea=2,para=h2para)
-        L2_sactime = get_divergence(sacdir_list[select_0heading],neural_activity[:,select_0heading,hidden1_size:],times_relate,rule_name,rule=rule,figname=figname,figname_append = kwargs['figname_append'],iarea=2,para=h2para)
+        L2_sactime = get_divergence(sacdir_list[select_0heading],neural_activity[:,select_0heading,hidden1_size:],times_relate,rule_name,rule=rule,figname=figname,figname_append = kwargs['figname_append'],iarea=2,para=h2sac_para)
     plt.savefig("./lunwenfigure/sac.svg")
     
     plt.figure(figsize=(10, 6))
@@ -581,16 +583,16 @@ def neuralactivity_color_dm(model_dir,**kwargs):
     heading0_choice = choice_per_trial[select_0heading]
     heading0_h1_activity = neural_activity[:,select_0heading,:hidden1_size]
     heading0_h2_activity = neural_activity[:,select_0heading,hidden1_size:]
-    plot_divergence(heading0_choice,heading0_h1_activity,times_relate,rule_name,rule=rule,figname=figname,figname_append = kwargs['figname_append'],iarea=1,para=h1para)
+    plot_divergence(heading0_choice,heading0_h1_activity,times_relate,rule_name,rule=rule,figname=figname,figname_append = kwargs['figname_append'],iarea=1,para=h1abs_para)
     SetFigure(15)
     plt.show()
-    L1_choicetime = get_divergence(heading0_choice,heading0_h1_activity,times_relate,rule_name,rule=rule,figname=figname,figname_append = kwargs['figname_append'],iarea=1,para=h1para)
+    L1_choicetime = get_divergence(heading0_choice,heading0_h1_activity,times_relate,rule_name,rule=rule,figname=figname,figname_append = kwargs['figname_append'],iarea=1,para=h1abs_para)
     if not hp.get("hidden_size2") is None:
         # plot_conditioned_divergence(choice_per_trial,heading_per_trial,neural_activity[:,:,hidden1_size:],times_relate,rule_name,rule=rule,figname=figname,figname_append = kwargs['figname_append'],para=h2para)
-        plot_divergence(heading0_choice,heading0_h2_activity,times_relate,rule_name,rule=rule,figname=figname,figname_append = kwargs['figname_append'],iarea=2,para=h2para)
+        plot_divergence(heading0_choice,heading0_h2_activity,times_relate,rule_name,rule=rule,figname=figname,figname_append = kwargs['figname_append'],iarea=2,para=h2abs_para)
         SetFigure(15)
         plt.show()
-        L2_choicetime = get_divergence(heading0_choice,heading0_h2_activity,times_relate,rule_name,rule=rule,figname=figname,figname_append = kwargs['figname_append'],iarea=2,para=h2para)   
+        L2_choicetime = get_divergence(heading0_choice,heading0_h2_activity,times_relate,rule_name,rule=rule,figname=figname,figname_append = kwargs['figname_append'],iarea=2,para=h2abs_para)   
     plt.savefig("./lunwenfigure/abschoice.svg")
 def plot_corr_heading_color_sac(heading_selectivity,saccade_selectivity,color_selectivity,**kwargs):
     import seaborn as sns
@@ -633,8 +635,8 @@ def plot_corr_heading_color_sac(heading_selectivity,saccade_selectivity,color_se
 # model_dir = './checkpoint/2AFC802hiddennet2keep.t7'    
 for i in [0]:
     figname_suffix = f'checkgpu/{i}'
-    model_dir = './checkpoint/checkgpu.t7'         
-    
+    # model_dir = './checkpoint/checkgpu.t7'         
+    model_dir = 'I:/model/data_simulation/neuralactivityinputtask/checkpoint_batchnew1/0421colorhdnet4.t7'
     neuralactivity_color_dm(model_dir,figname_append=figname_suffix) 
     # psychometric_color_dm(model_dir,figname_append=figname_suffix)
     # neuralactivity_dm(model_dir,figname_append='continue2AFC2hidden2') 
