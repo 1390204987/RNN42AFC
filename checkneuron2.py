@@ -635,8 +635,8 @@ def plot_corr_heading_color_sac(heading_selectivity,saccade_selectivity,color_se
 # model_dir = './checkpoint/2AFC802hiddennet2keep.t7'    
 for i in [0]:
     figname_suffix = f'checkgpu/{i}'
-    # model_dir = './checkpoint/checkgpu.t7'         
-    model_dir = 'I:/model/data_simulation/neuralactivityinputtask/checkpoint_batchnew1/0421colorhdnet4.t7'
+    model_dir = './checkpoint/checkgpu.t7'         
+    # model_dir = 'I:/model/data_simulation/neuralactivityinputtask/checkpoint_batchnew1/0421colorhdnet4.t7'
     neuralactivity_color_dm(model_dir,figname_append=figname_suffix) 
     # psychometric_color_dm(model_dir,figname_append=figname_suffix)
     # neuralactivity_dm(model_dir,figname_append='continue2AFC2hidden2') 

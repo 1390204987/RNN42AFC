@@ -21,6 +21,7 @@ from mynetwork_new3 import Net
 
 from mytools import popvec,get_y_direction
 import matplotlib.pyplot as plt
+from matplotlib.colors import LinearSegmentedColormap
 
 from scipy.stats import pearsonr
 
@@ -155,26 +156,70 @@ def neuralactivity_color_dm(model_dir,**kwargs):
     n_input_heading = hp['n_input_heading']
     n_input_targcolor = hp['n_input_targcolor']
     n_input_rules = hp['n_input_rules']
+    
+    # Create a custom colormap: 0 → white, higher values → darker (e.g., blue/black)
+    colors = [(1, 1, 1), (0, 0, 0.5)]  # White to dark blue
+    cmap = LinearSegmentedColormap.from_list('custom_cmap', colors, N=256)
+    
     plt.figure()
-    plt.imshow(x[:,selected_index,: n_input_heading].T)
-    plt.xticks(ticks=[stim1_ons,stim1_end], labels=['stim1 on','stim1 end'],fontfamily='Arial') 
+    plt.imshow(x[:,selected_index,: n_input_heading].T,cmap=cmap)
+    plt.xticks(ticks=[stim1_ons,stim1_end], labels=['stim1 on','stim1 end']) 
     plt.savefig("./lunwenfigure/headinginput.svg")
+    # Remove top and right spines
+    ax = plt.gca()
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)    
+    # Optional: Keep bottom and left spines but make them thinner
+    ax.spines['bottom'].set_linewidth(0.5)
+    ax.spines['left'].set_linewidth(0.5)
+    
     plt.figure()
-    plt.imshow(x[:,selected_index,n_input_heading:n_input_heading+n_input_targcolor].T)
+    plt.imshow(x[:,selected_index,n_input_heading:n_input_heading+n_input_targcolor].T,cmap=cmap)
     plt.xticks(ticks=[stim1_ons,stim1_end], labels=['stim1 on','stim1 end']) 
     plt.savefig("./lunwenfigure/colorinput.svg")
+    # Remove top and right spines
+    ax = plt.gca()
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)    
+    # Optional: Keep bottom and left spines but make them thinner
+    ax.spines['bottom'].set_linewidth(0.5)
+    ax.spines['left'].set_linewidth(0.5)
+    
     plt.figure()
-    plt.imshow(x[:,selected_index,n_input_heading+n_input_targcolor:].T)
+    plt.imshow(x[:,selected_index,n_input_heading+n_input_targcolor:].T,cmap=cmap)
     plt.xticks(ticks=[stim1_ons,stim1_end], labels=['stim1 on','stim1 end']) 
     plt.savefig("./lunwenfigure/ruleinput.svg")
+    # Remove top and right spines
+    ax = plt.gca()
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)    
+    # Optional: Keep bottom and left spines but make them thinner
+    ax.spines['bottom'].set_linewidth(0.5)
+    ax.spines['left'].set_linewidth(0.5)
+    
     plt.figure()
-    plt.imshow(y[:,selected_index,:].T)
+    plt.imshow(y[:,selected_index,:].T,cmap=cmap)
     plt.xticks(ticks=[stim1_ons,stim1_end], labels=['stim1 on','stim1 end']) 
     plt.savefig("./lunwenfigure/expectoutput.svg")
+    # Remove top and right spines
+    ax = plt.gca()
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)    
+    # Optional: Keep bottom and left spines but make them thinner
+    ax.spines['bottom'].set_linewidth(0.5)
+    ax.spines['left'].set_linewidth(0.5)
+    
     plt.figure()
-    plt.imshow(y_hat[:,selected_index,:].T)
+    plt.imshow(y_hat[:,selected_index,:].T,cmap=cmap)
     plt.xticks(ticks=[stim1_ons,stim1_end], labels=['stim1 on','stim1 end']) 
     plt.savefig("./lunwenfigure/realoutput.svg")
+    # Remove top and right spines
+    ax = plt.gca()
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)    
+    # Optional: Keep bottom and left spines but make them thinner
+    ax.spines['bottom'].set_linewidth(0.5)
+    ax.spines['left'].set_linewidth(0.5)
 for i in [0]:
     figname_suffix = f'checkgpu/{i}'
     model_dir = './checkpoint/checkgpu.t7'         

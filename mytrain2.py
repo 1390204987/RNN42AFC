@@ -83,7 +83,7 @@ def get_default_hp(ruleset):
             'sigma_feedback':0.1,
             # recurrent connectivity
             'recur1':0.1,
-            'recur2':0.4,
+            'recur2':1,
             'fforwardstren':1,
             'fbackstren':1,                
             # 'sigma_x': 0.0001,
