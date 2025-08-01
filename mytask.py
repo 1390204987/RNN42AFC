@@ -58,7 +58,7 @@ def get_dist(original_dist):
 class Trial(object):
     """Class representing a batch of trials."""
 
-    def __init__(self, config, tdim, batch_size,ons):
+    def __init__(self, config, tdim, batch_size,on,off):
         """A batch of trials.
 
         Args:
@@ -69,8 +69,8 @@ class Trial(object):
         self.float_type = 'float32' # This should be the default
         self.config = config
         self.dt = self.config['dt']
-        self.ons = ons
-        
+        self.on = on
+        self.off = off
         self.n_eachring = self.config['n_eachring']
         self.n_input = self.config['n_input']
         self.n_output = self.config['n_output']
@@ -114,9 +114,23 @@ class Trial(object):
             if loc_type == 'fix_in':
                 self.x[ons[i]: offs[i], i, 0] = 1        
             elif loc_type == 'stim':
-                # Assuming that mods[i] starts from 1
-                self.x[ons[i]: offs[i], i, 1+(mods[i]-1)*self.n_eachring:1+mods[i]*self.n_eachring] \
-                    += self.add_x_loc(locs[i])*strengths[i]        
+
+                if mods[0]==1:
+                    # 生成高斯时间窗口
+                    t_start, t_end = ons[i], offs[i]
+                    t_center = (t_start + t_end) / 2  # 高斯中心点
+                    sigma = (t_end - t_start) / 10    # 标准差（控制宽度，4σ覆盖大部分区间）               
+                    # 生成时间点数组
+                    t = np.arange(t_start, t_end)
+                    # 计算高斯权重（峰值归一化到 strengths[i]）
+                    gaussian_weights = strengths[i] * np.exp(-0.5 * ((t - t_center) / sigma) ** 2)               
+                    # 应用高斯权重到 stim 信号
+                    stim_signal = self.add_x_loc(locs[i]) * gaussian_weights[:, np.newaxis]  # 保持维度一致
+                    self.x[ons[i]: offs[i], i, 1+(mods[i]-1)*self.n_eachring:1+mods[i]*self.n_eachring] += stim_signal
+                else:
+                    # Assuming that mods[i] starts from 1
+                    self.x[ons[i]: offs[i], i, 1+(mods[i]-1)*self.n_eachring:1+mods[i]*self.n_eachring] \
+                        += self.add_x_loc(locs[i])*strengths[i] 
             elif loc_type == 'fix_out':
                 # Notice this shouldn't be set at 1, because the output is logistic and saturates at 1
                 if self.config['loss_type'] == 'lsq':
@@ -137,12 +151,25 @@ class Trial(object):
     def add_x_noise(self,config):
         """Add input noise."""
         n_heading = config['n_input_heading']
-        x_heading = self.x[:,:,:n_heading]
-        x_noise = np.random.randn(*x_heading.shape)
+        x_heading = self.x[self.on:self.off,:,1:n_heading]
+        x_noise = np.random.randn(*x_heading.shape)*self._sigma_x
         
+        # Smooth noise along index=0 (e.g., time dimension)
+        if x_noise.shape[0] > 1:  # Only smooth if there are multiple steps
+            # Method 1: Gaussian smoothing (recommended)
+            from scipy.ndimage import gaussian_filter1d
+            x_noise_smoothed = gaussian_filter1d(x_noise, sigma=1.0, axis=0)
+            
+            # Method 2: Moving average (alternative)
+            # window_size = 3
+            # x_noise_smoothed = np.convolve(x_noise, np.ones(window_size)/window_size, mode='same')
+            
+            # Replace index=0 with smoothed version
+            x_noise[:, :, :] = x_noise_smoothed
+            
         # self.x += self.config['rng'].randn(*self.x.shape)*self._sigma_x    
-        self.x[:,:,:n_heading] += x_noise*self._sigma_x
-        # self.x[:,:,:n_heading] += x_noise*self._sigma_x*np.mean(self.x[:,:,1:n_heading],axis=2,keepdims=True)
+        # self.x[:,:,:n_heading] += x_noise
+        self.x[self.on:self.off,:,1:n_heading] += x_noise
         # self.x += np.random.randn(*self.x.shape)*self._sigma_x*np.sqrt(self.x)
     def add_c_mask(self, pre_offs, post_ons):
         """Add a cost mask.
@@ -283,7 +310,7 @@ def delaysaccade_(config, mode,stim_mod,**kwargs):
     response_locs = stim_locs
         
         
-    trial = Trial(config, tdim, batch_size, stim_ons)        
+    trial = Trial(config, tdim, batch_size, stim_ons,stim_offs)        
     trial.add('fix_in', offs=fix_offs)        
     trial.add('stim', stim_locs, ons=stim_ons, offs=stim_offs, mods=1)        
     trial.add('fix_out', offs=fix_offs)        
@@ -348,11 +375,12 @@ def dm_(config, mode, stim_mod, **kwargs):
         stim_strengths = stims_coh
         
         # Time of stimuluss on/off
-        stim_on = int(rng.uniform(100,400)/dt)
+        stim_on = int(rng.uniform(100,400)/dt)        
         stim_ons = (np.ones(batch_size)*stim_on).astype(int)
         stim_dur = int(rng.choice([400, 800, 1600])/dt)
+        stim_off = (stim_on+stim_dur)
         fix_offs = (stim_ons+stim_dur+int(50/dt)).astype(int)        
-        
+        stim_offs = (stim_ons+stim_dur).astype(int)  
         tdim = stim_on+stim_dur+int(500/dt)     
     elif mode == 'psychometric':
         p = kwargs['params']
@@ -364,9 +392,9 @@ def dm_(config, mode, stim_mod, **kwargs):
         stim_dur = p['stim_time']
         stim_dur = int(stim_dur/dt)
         stim_on = int(rng.uniform(100,400)/dt)
+        stim_off = (stim_on+stim_dur)
         stim_ons = (np.ones(batch_size)*stim_on).astype(int)
-        fix_offs = (stim_ons+stim_dur+int(50/dt)).astype(int)        
-        
+        fix_offs = (stim_ons+stim_dur+int(50/dt)).astype(int)                
         tdim = stim_on+stim_dur+int(500/dt)     
         
     else:
@@ -375,7 +403,7 @@ def dm_(config, mode, stim_mod, **kwargs):
     # time to check the saccade location
     check_ons  = fix_offs + int(100/dt)
 
-    trial = Trial(config, tdim, batch_size,stim_ons)
+    trial = Trial(config, tdim, batch_size,stim_on,stim_off)
     trial.add('fix_in', offs=fix_offs)
     trial.add('stim', stim_locs, ons=stim_ons, offs=fix_offs, strengths=stim_strengths, mods=1)
     trial.add('fix_out', offs=fix_offs)
@@ -440,27 +468,29 @@ def coltargdm(config, mode,stim_mod, **kwargs):
         # stim1_coh_range = np.random.uniform(0.01,0.08,batch_size)
         stim1_coh_range = np.random.uniform(0,2,batch_size)
         stim1_coh_range *= 1
+        rng = np.random.default_rng(seed=42)
         stims1_coh  = rng.choice(stim1_coh_range, (batch_size,))
         
         # Color stimulus
         # stim2_locs = rng.choice([np.pi,2*np.pi], (batch_size,))
+        rng = np.random.default_rng(seed=43)
         stim2_locs = rng.choice([np.pi,0], (batch_size,))
         stim3_locs = (stim2_locs+np.pi)%(2*np.pi) 
         stims2_coh  = np.ones((batch_size,))
         stims3_coh  = np.ones((batch_size,))
         # Time of stimuluss on/off
 
-        stim1_ons  = int(rng.uniform(100,600)/dt)
+        stim1_on  = int(rng.uniform(100,600)/dt)
         stim_dur = int(rng.choice([400, 800, 1600])/dt)
-        stim1_offs = stim1_ons + stim_dur
-        fix_offs  = stim1_offs + int(50/dt)
-        stim2_ons  = stim1_ons
-        stim2_offs = fix_offs + int(500/dt)
-        stim3_ons  = stim1_ons
-        stim3_offs = fix_offs + int(500/dt)
+        stim1_off = stim1_on + stim_dur
+        fix_off  = stim1_off + int(50/dt)
+        stim2_on  = stim1_on
+        stim2_off = fix_off + int(500/dt)
+        stim3_on  = stim1_on
+        stim3_off = fix_off + int(500/dt)
 
         
-        tdim = fix_offs + int(500/dt)
+        tdim = fix_off + int(500/dt)
     elif mode == 'psychometric':
         p = kwargs['params']
         stim1_locs = p['stim1_locs']
@@ -475,32 +505,32 @@ def coltargdm(config, mode,stim_mod, **kwargs):
         
         stim_dur = p['stim_time']
         stim_dur = int(stim_dur/dt)
-        stim1_ons = int(rng.uniform(100,600)/dt)
-        stim1_offs = stim1_ons + stim_dur
-        fix_offs = stim1_offs+int(50/dt)
-        stim2_ons  = stim1_ons
-        stim2_offs = fix_offs + int(500/dt)
-        stim3_ons  = stim1_ons
-        stim3_offs = fix_offs + int(500/dt)
+        stim1_on = int(rng.uniform(100,600)/dt)
+        stim1_off = stim1_on + stim_dur
+        fix_off = stim1_off+int(50/dt)
+        stim2_on  = stim1_on
+        stim2_off = fix_off + int(500/dt)
+        stim3_on  = stim1_on
+        stim3_off = fix_off + int(500/dt)
         
-        tdim = fix_offs + int(500/dt)
+        tdim = fix_off + int(500/dt)
         
         
     else:
         raise ValueError('Unknown mode: ' + str(mode))
 
     # time to check the saccade location
-    check_ons = fix_offs + int(100/dt)       
+    check_on = fix_off + int(100/dt)       
     
     stim1_cats = stim1_locs<np.pi # Category of stimulus 1
     heading0_loc = stim1_locs==np.pi
     stim1_cats[heading0_loc] = rng.choice([np.pi,0]) 
-    trial = Trial(config, tdim, batch_size,stim1_ons)
+    trial = Trial(config, tdim, batch_size,stim1_on,stim1_off)
 
-    trial.add('fix_in', offs=fix_offs)
-    trial.add('stim', stim1_locs, ons=stim1_ons, offs=stim1_offs, strengths=stims1_coh, mods=1)
-    trial.add('stim', stim2_locs, ons=stim2_ons,offs=stim2_offs, mods=2)
-    trial.add('stim', stim3_locs, ons=stim3_ons, offs=stim3_offs, mods=3)   
+    trial.add('fix_in', offs=fix_off)
+    trial.add('stim', stim1_locs, ons=stim1_on, offs=stim1_off, strengths=stims1_coh, mods=1)
+    trial.add('stim', stim2_locs, ons=stim2_on,offs=stim2_off, mods=2)
+    trial.add('stim', stim3_locs, ons=stim3_on, offs=stim3_off, mods=3)   
     
     # Target location
     stim_locs = list()
@@ -510,14 +540,14 @@ def coltargdm(config, mode,stim_mod, **kwargs):
         else:
             stim_locs.append(stim3_locs[i])
             
-    trial.add('fix_out', offs=fix_offs)
-    trial.add('out', stim_locs, ons=fix_offs)
+    trial.add('fix_out', offs=fix_off)
+    trial.add('out', stim_locs, ons=fix_off)
     
-    trial.add_c_mask(pre_offs=fix_offs, post_ons=check_ons)
+    trial.add_c_mask(pre_offs=fix_off, post_ons=check_on)
 
-    trial.epochs = {'fix1'     : (None, stim1_ons),
-                   'stim1'     : (stim1_ons, stim1_offs),
-                   'go1'      : (fix_offs, None)}
+    trial.epochs = {'fix1'     : (None, stim1_on),
+                   'stim1'     : (stim1_on, stim1_off),
+                   'go1'      : (fix_off, None)}
 
    
     return trial

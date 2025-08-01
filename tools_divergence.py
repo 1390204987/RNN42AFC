@@ -12,14 +12,14 @@ from scipy.stats import pearsonr,ttest_ind
 import os
 from guassian_smooth import guass_smooth
 
-
+# from statsmodels.stats.weightstats import ttest_ind
 
 from scipy.stats import pearsonr, ttest_ind
 import numpy as np
 def get_divergence(var_list, neural_activity, times_relate, rule_name, figname, iarea, **kwargs):
     dt = times_relate['dt']    
-    stim_ons = times_relate['stim_ons']
-    stim_on = np.unique(stim_ons) * dt
+    stim_on_ = times_relate['stim_on']
+    stim_on = np.unique(stim_on_) * dt
     stim_dur = times_relate['stim_dur']
     stim_end = stim_dur[0] if isinstance(stim_dur, (list, np.ndarray)) else stim_dur
     
@@ -53,14 +53,14 @@ def get_divergence(var_list, neural_activity, times_relate, rule_name, figname, 
         prefer_zactivity.append(z_neural_activity[:, select_prefer])
         none_zactivity.append(z_neural_activity[:, select_none])
         
-    divergence = np.zeros((unit_num, len(t_centers)))
+    divergence = np.full([unit_num,len(t_centers)], np.nan)
     for iunit in range(unit_num):
         divergence[iunit, :] = np.nanmean(prefer_zactivity[iunit], axis=1) - np.nanmean(none_zactivity[iunit], axis=1)
     meandivergence = np.nanmean(divergence, axis=0)
     sem_divergence = np.nanstd(divergence, axis=0) / np.sqrt(unit_num)
     
     # Permutation testing (10 times)
-    divergence_shuffle_all = np.zeros((10, unit_num, len(t_centers)))
+    divergence_shuffle_all = np.full([10, unit_num, len(t_centers)],np.nan)
     for n in range(10):
         var_list_shuffle = np.random.permutation(var_list)
         for iunit in range(unit_num):
@@ -104,8 +104,8 @@ def get_divergence(var_list, neural_activity, times_relate, rule_name, figname, 
 def plot_divergence(var_list, neural_activity, times_relate, rule_name, figname, iarea, **kwargs):
     plot_para = kwargs.get('para', {})
     dt = times_relate['dt']    
-    stim_ons = times_relate['stim_ons']
-    stim_on = np.unique(stim_ons) * dt
+    stim_on_ = times_relate['stim_on']
+    stim_on = np.unique(stim_on_) * dt
     stim_dur = times_relate['stim_dur']
     stim_end = stim_dur[0] if isinstance(stim_dur, (list, np.ndarray)) else stim_dur
 
@@ -120,6 +120,7 @@ def plot_divergence(var_list, neural_activity, times_relate, rule_name, figname,
 
     prefer_zactivity = []
     none_zactivity = []
+    z_neural_activity = []
 
     for iunit in range(unit_num):
         firing_rate = np.squeeze(np.mean(neural_activity[time_begin_ind:time_end_ind, :, iunit], 0))
@@ -134,19 +135,19 @@ def plot_divergence(var_list, neural_activity, times_relate, rule_name, figname,
         t_centers,step_size,neural_act_smooth = guass_smooth(align_markers, neural_activity[:, :, iunit])
         base = np.mean(neural_act_smooth, axis=1, keepdims=True)
         gain = np.std(neural_act_smooth, keepdims=True) + 1e-6
-        z_neural_activity = (neural_act_smooth - base) / gain
+        z_neural_activity.append ((neural_act_smooth - base) / gain)
 
-        prefer_zactivity.append(z_neural_activity[:, select_prefer])
-        none_zactivity.append(z_neural_activity[:, select_none])
+        prefer_zactivity.append(z_neural_activity[iunit][:, select_prefer])
+        none_zactivity.append(z_neural_activity[iunit][:, select_none])
 
-    divergence = np.zeros((unit_num, len(t_centers)))
+    divergence = np.full([unit_num,len(t_centers)], np.nan)
     for iunit in range(unit_num):
         divergence[iunit, :] = np.nanmean(prefer_zactivity[iunit], axis=1) - np.nanmean(none_zactivity[iunit], axis=1)
     meandivergence = np.nanmean(divergence, axis=0)
     sem_divergence = np.nanstd(divergence, axis=0) / np.sqrt(unit_num)
     
     # Permutation testing (100 times)
-    divergence_shuffle_all = np.zeros((10, unit_num, len(t_centers)))
+    divergence_shuffle_all = np.full([10, unit_num, len(t_centers)],np.nan)
     for n in range(10):
         var_list_shuffle = np.random.permutation(var_list)
         for iunit in range(unit_num):
@@ -158,14 +159,9 @@ def plot_divergence(var_list, neural_activity, times_relate, rule_name, figname,
             select_prefer_shuffle = var_list_shuffle == prefer_shuffle
             select_none_shuffle = var_list_shuffle == none_shuffle
 
-            align_markers = [trial_start, trial_end]
-            _,_, neural_act_smooth = guass_smooth(align_markers, neural_activity[:, :, iunit])
-            base = np.mean(neural_act_smooth, axis=1, keepdims=True)
-            gain = np.std(neural_act_smooth, keepdims=True) + 1e-6
-            z_neural_activity = (neural_act_smooth - base) / gain
 
-            pref_z = z_neural_activity[:, select_prefer_shuffle]
-            none_z = z_neural_activity[:, select_none_shuffle]
+            pref_z = z_neural_activity[iunit][:, select_prefer_shuffle]
+            none_z = z_neural_activity[iunit][:, select_none_shuffle]
             divergence_shuffle_all[n, iunit, :] = np.nanmean(pref_z, axis=1) - np.nanmean(none_z, axis=1)
 
     # Mean across units, then mean across permutations
@@ -175,7 +171,10 @@ def plot_divergence(var_list, neural_activity, times_relate, rule_name, figname,
 
     # Perform t-test between real and permuted divergence
     t_stat, p_val = ttest_ind(divergence, meandivergence_shuffle_100, nan_policy='omit')
-
+    # 手动转换为单侧 p 值（greater）
+    p_val_greater = p_val / 2  # 双侧 p 值的一半
+    p_val_greater = np.where(t_stat > 0, p_val_greater, 1 - p_val_greater)  # 确保 t_stat > 0 时才认为显著
+    significant_time_points = t_centers[p_val_greater < 0.001]
     # Plotting
     # plt.figure(figsize=(10, 6))
     # plt.errorbar(t_centers, meandivergence, yerr=sem_divergence, label='Original Mean Divergence', color=plot_para['color'])
@@ -222,7 +221,7 @@ def plot_divergence(var_list, neural_activity, times_relate, rule_name, figname,
     sns.despine()  # 移除顶部和右侧的轴线
     plt.tight_layout()
     # Mark significant p-values
-    significant_time_points = t_centers[p_val < 0.001]
+    significant_time_points = t_centers[p_val_greater < 0.05]
     y_loc = np.zeros(significant_time_points.size)-iarea*0.01
     plt.scatter(significant_time_points, y_loc, color=plot_para['color'], marker='*', label='p < 0.001')
 
@@ -245,26 +244,43 @@ def plot_divergence(var_list, neural_activity, times_relate, rule_name, figname,
     plt.savefig(figname+'.png', transparent=True) 
 
 def plot_conditioned_divergence(var_list1,var_list2,neural_activity,times_relate,rule_name,figname,iarea,**kwargs):
-    plot_para = kwargs['para']
+    plot_para = kwargs.get('para', {})
     dt = times_relate['dt']    
-    stim_ons = times_relate['stim_ons']
-    stim_on = np.unique(stim_ons)*dt
+    stim_on_ = times_relate['stim_on']
+    stim_on = np.unique(stim_on_) * dt
     stim_dur = times_relate['stim_dur']
-    stim_end = stim_on + stim_dur[0]
-    time_steps = np.arange(neural_activity.shape[0])*dt
-    time_begin_ind = np.where(time_steps>=stim_on)[0][0]
-    time_end_ind = np.where(time_steps<=stim_end)[0][-1]
-    
+    stim_end = stim_dur[0] if isinstance(stim_dur, (list, np.ndarray)) else stim_dur
+
+    time_steps = np.arange(neural_activity.shape[0]) * dt - stim_on
+    time_begin_ind = np.where(time_steps >= 0)[0][0]
+    time_end_ind = np.where(time_steps <= stim_end)[0][-1]
+    trial_start = -stim_on
+    trial_end = time_steps[-1]
+
     unique_var = np.unique(var_list1)
-    unit_num = neural_activity.shape[2]
-    divergence = np.zeros((unit_num, len(time_steps)))
-    meandivergence = np.zeros((1, len(time_steps)))
+    [_,batch_size,unit_num] = neural_activity.shape
+
+    prefer_zactivity = []
+    none_zactivity = []
+    smooth_neural_activity = []
+    
+    for iunit in range(unit_num):
+
+        align_markers = [trial_start, trial_end]
+        t_centers,step_size,neural_act_smooth = guass_smooth(align_markers, neural_activity[:, :, iunit])
+        base = np.mean(neural_act_smooth, axis=1, keepdims=True)
+        gain = np.std(neural_act_smooth, keepdims=True) + 1e-6
+        smooth_neural_activity.append((neural_act_smooth - base) / gain)
+    
+    
     
     var_list_shuffle = np.random.permutation(var_list1)
     divergence_shuffle = np.zeros((unit_num, len(time_steps)))
     meandivergence_shuffle = np.zeros((1, len(time_steps)))
+    divergence = np.full([unit_num,len(t_centers)], np.nan)
+    # z_neural_activity = np.zeros([len(t_centers),batch_size,unit_num])
     for iunit in range(unit_num):
-        firing_rate = np.squeeze(np.nanmean(neural_activity[time_begin_ind:time_end_ind,:,iunit],0))
+        firing_rate = np.squeeze(np.nanmean(smooth_neural_activity[iunit][time_begin_ind:time_end_ind,:],0))
         rr = pearsonr(var_list1,firing_rate)
         if rr[0]>0:
             prefer = unique_var[1]
@@ -287,51 +303,138 @@ def plot_conditioned_divergence(var_list1,var_list2,neural_activity,times_relate
         # gain = np.max(neural_activity[:, :, iunit]) - base
         # z_neural_activity = (neural_activity[:,:,iunit]-base)/gain
         unique_var2 = np.unique(var_list2)
-        z_neural_activity = np.zeros_like(neural_activity)
-        for ivar2 in unique_var2:
-            select = var_list2==ivar2
-            selected_activity = neural_activity[:, select, iunit]
+        unique_var1 = np.unique(var_list1)
+        # for ivar2 in unique_var2:
+        #     select = var_list2==ivar2
+        #     selected_activity = smooth_neural_activity[iunit][:, select]
+        #     # Calculate mean and std for the selected activity
+        #     mean_activity = np.nanmean(selected_activity, axis=1, keepdims=True)
+        #     std_activity = np.nanstd(selected_activity, axis=1, keepdims=True)
+        #     z_neural_activity[:, select, iunit] = (selected_activity - mean_activity) / std_activity
+        
+        # prefer_zactivity = z_neural_activity[:,select_prefer,iunit]
+        # none_zactivity = z_neural_activity[:,select_none,iunit]
+        # divergence[iunit, :] = np.nanmean(prefer_zactivity, axis=1) - np.nanmean(none_zactivity, axis=1)
+        
+        diver_neural_activity = np.full([len(t_centers), len(unique_var2), unit_num], np.nan)
+        for ivar2_idx in range(len(unique_var2)):
+            ivar2 = unique_var2[ivar2_idx]
+            select1 = (var_list2==ivar2)&select_prefer
+            select2 = (var_list2==ivar2)&select_none
+            selected1_activity = smooth_neural_activity[iunit][:, select1]
+            selected2_activity = smooth_neural_activity[iunit][:, select2]
             # Calculate mean and std for the selected activity
-            mean_activity = np.nanmean(selected_activity, axis=1, keepdims=True)
-            std_activity = np.nanstd(selected_activity, axis=1, keepdims=True)
-            z_neural_activity[:, select, iunit] = (selected_activity - mean_activity) / std_activity
+            mean1_activity = np.nanmean(selected1_activity, axis=1, keepdims=True)
+            mean2_activity = np.nanmean(selected2_activity, axis=1, keepdims=True)    
+            # 计算差异
+            diff = np.squeeze(mean1_activity - mean2_activity)            
+            # 存储差异值（确保类型兼容）
+            diver_neural_activity[:, ivar2_idx, iunit] = diff
         
-        prefer_zactivity = z_neural_activity[:,select_prefer,iunit]
-        none_zactivity = z_neural_activity[:,select_none,iunit]
-        divergence[iunit, :] = np.nanmean(prefer_zactivity, axis=1) - np.nanmean(none_zactivity, axis=1)
+        divergence[iunit, :] = np.squeeze(np.nanmean(diver_neural_activity[:,:,iunit], axis=1))
+                        
+  
         
-        select_prefer_shuffle = var_list_shuffle==prefer_shuffle
-        select_none_shuffle = var_list_shuffle==none_shuffle
+        # select_prefer_shuffle = var_list_shuffle==prefer_shuffle
+        # select_none_shuffle = var_list_shuffle==none_shuffle
 
-        prefer_zactivity_shuffle = z_neural_activity[:,select_prefer_shuffle,iunit]
-        none_zactivity_shuffle = z_neural_activity[:,select_none_shuffle,iunit]
-        divergence_shuffle[iunit, :] = np.mean(prefer_zactivity_shuffle, axis=1) - np.mean(none_zactivity_shuffle, axis=1)
+        # prefer_zactivity_shuffle = z_neural_activity[:,select_prefer_shuffle,iunit]
+        # none_zactivity_shuffle = z_neural_activity[:,select_none_shuffle,iunit]
+        # divergence_shuffle[iunit, :] = np.mean(prefer_zactivity_shuffle, axis=1) - np.mean(none_zactivity_shuffle, axis=1)
         
     meandivergence = np.nanmean(divergence, axis=0)
-    meandivergence_shuffle = np.nanmean(divergence_shuffle, axis=0)
+    # meandivergence_shuffle = np.nanmean(divergence_shuffle, axis=0)
     sem_divergence = np.nanstd(divergence, axis=0) / np.sqrt(unit_num)
-    sem_divergence_shuffle = np.nanstd(divergence_shuffle, axis=0) / np.sqrt(unit_num)
+    # sem_divergence_shuffle = np.nanstd(divergence_shuffle, axis=0) / np.sqrt(unit_num)
+    
+    # Permutation testing (100 times)
+    divergence_shuffle_all = np.full([10, unit_num, len(t_centers)],np.nan)
+    for n in range(10):
+        var_list_shuffle = np.random.permutation(var_list1)
+        for iunit in range(unit_num):
+            firing_rate = np.squeeze(np.mean(smooth_neural_activity[iunit][time_begin_ind:time_end_ind, :], 0))
+            # 假设 var_list_shuffle 和 firing_rate 是 NumPy 数组或列表
+            valid_mask = ~np.isnan(var_list_shuffle) & ~np.isnan(firing_rate)
+            if len(valid_mask) == 0 or np.sum(valid_mask) < 2:
+                rr_shuffle = (1, 1)
+            else:
+                rr_shuffle = pearsonr(var_list_shuffle[valid_mask], firing_rate[valid_mask])
+            # print(iunit)
+            prefer_shuffle = unique_var[1] if rr_shuffle[0] > 0 else unique_var[0]
+            none_shuffle = unique_var[0] if rr_shuffle[0] > 0 else unique_var[1]
+
+            select_prefer_shuffle = var_list_shuffle == prefer_shuffle
+            select_none_shuffle = var_list_shuffle == none_shuffle
+
+
+            pref_z = smooth_neural_activity[iunit][:, select_prefer_shuffle]
+            none_z = smooth_neural_activity[iunit][:, select_none_shuffle]
+            divergence_shuffle_all[n, iunit, :] = np.nanmean(pref_z, axis=1) - np.nanmean(none_z, axis=1)
+
+    # Mean across units, then mean across permutations
+    meandivergence_shuffle_100 = np.nanmean(divergence_shuffle_all, axis=0)  # shape (unit, time)
+    meandivergence_shuffle_avg = np.nanmean(meandivergence_shuffle_100, axis=0)  # shape (time,)
+    sem_divergence_shuffle = np.nanstd(meandivergence_shuffle_100, axis=0) / np.sqrt(unit_num)
  
         # Perform t-test between original and shuffled mean divergence
-    t_stat, p_val = ttest_ind(divergence, divergence_shuffle, nan_policy='omit')
+    t_stat, p_val = ttest_ind(divergence, meandivergence_shuffle_100, nan_policy='omit')
+    # 手动转换为单侧 p 值（greater）
+    p_val_greater = p_val / 2  # 双侧 p 值的一半
+    p_val_greater = np.where(t_stat > 0, p_val_greater, 1 - p_val_greater)  # 确保 t_stat > 0 时才认为显著
+    significant_time_points = t_centers[p_val_greater < 0.05]
     
+    sns.set(style='whitegrid')
+        
+    # 原始数据
+    # plt.errorbar(t_centers, meandivergence, yerr=sem_divergence, 
+    #              fmt='none',uplims=True, lolims=True, 
+    #              label='Original Mean Divergence', 
+    #              color=plot_para['color'],
+    #              linewidth=2)
+    # 绘制平滑曲线
+    plt.plot(t_centers, meandivergence, label='Original', 
+             linewidth=2,color=plot_para['color'])
+    # Shuffle数据
+    # plt.errorbar(t_centers, meandivergence_shuffle_avg, yerr=sem_divergence_shuffle, 
+    #              fmt='none',uplims=True, lolims=True, 
+    #              label='Shuffled Mean Divergence', 
+    #              linestyle='--', 
+    #              color=plot_para['color'],
+                 # linewidth=2)
+    # 绘制平滑曲线
+    plt.plot(t_centers, meandivergence_shuffle_avg, label='Original',
+             linestyle='--', color=plot_para['color'],linewidth=2)
+
+    # 添加填充区域（可选）
+    plt.fill_between(t_centers, 
+                     meandivergence - sem_divergence,
+                     meandivergence + sem_divergence,
+                     color=plot_para['color'], alpha=0.1)
     
-    # Plotting
-    # plt.figure(figsize=(10, 6))
-    plt.errorbar(time_steps, meandivergence, yerr=sem_divergence, label='Original Mean Divergence', color=plot_para['color'])
-    plt.errorbar(time_steps, meandivergence_shuffle, yerr=sem_divergence_shuffle, label='Shuffled Mean Divergence', linestyle='--', color=plot_para['color'])
+    plt.fill_between(t_centers,
+                     meandivergence_shuffle_avg - sem_divergence_shuffle,
+                     meandivergence_shuffle_avg + sem_divergence_shuffle,
+                     color=plot_para['color'], alpha=0.1)
     
+    # 美化图形
+    plt.grid(False)
+    plt.legend(frameon=False)
+    plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+    plt.title('Divergence Comparison: Original vs Shuffled')
+    sns.despine()  # 移除顶部和右侧的轴线
+    plt.tight_layout()
     # Mark significant p-values
-    significant_time_points = time_steps[p_val < 0.001]
-    
-    y_loc = np.zeros(significant_time_points.size)-iarea*0.001
-    plt.scatter(significant_time_points, y_loc, color=plot_para['color'], marker='*', label='p < 0.01')
+    significant_time_points = t_centers[p_val_greater < 0.05]
+    y_loc = np.zeros(significant_time_points.size)-iarea*0.01
+    plt.scatter(significant_time_points, y_loc, color=plot_para['color'], marker='*', label='p < 0.001')
 
     
-    plt.axvline(x=0, color='r', linestyle='--', label='Stim Onset')
-    plt.axvline(x=stim_end, color='g', linestyle='--', label='Stim End')
+    plt.axvline(x=0, color='k', linestyle='--', label='Stim Onset')
+    plt.axvline(x=stim_end, color='k', linestyle='--', label='Stim End')
     plt.xlabel('Time (s)')
     plt.ylabel('Divergence')
+    # plt.title(f'Divergence between Preferred and Non-preferred Stimuli (p-value: {p_val:.4f})')
+    plt.show()
     # plt.title(f'Divergence between Preferred and Non-preferred Stimuli (p-value: {p_val:.4f})')
     # plt.legend()
     # plt.show()

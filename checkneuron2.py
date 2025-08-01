@@ -26,8 +26,8 @@ from mytask import generate_trials, rule_name, get_dist
           
 import mynetwork_new3
 from mynetwork_new3 import Net
-# import mynetwork7
-# from mynetwork7 import Net
+# import mynetwork8
+# from mynetwork8 import Net
 
 # import mynetwork1hidden
 # from mynetwork1hidden import Net
@@ -77,7 +77,7 @@ def _neuralactivity_dm(model_dir, rule, stim_mod, params_list, batch_shape):
     hp['sigma_rec1']=0.1
     hp['sigma_rec2']=0.1
     # hp['fforwardstren']=0.1
-    hp['fbackstren']=1
+    hp['fbackstren']=0
     # hp['sigma_x'] = 0.1,
     net = Net(hp,dt = hp['dt'])
     #remove prefixe "module"
@@ -193,7 +193,7 @@ def neuralactivity_dm(model_dir,**kwargs):
     neural_activity,test_trial,state_dict,y_hat,y_loc,effective_weight,hp = _neuralactivity_dm(model_dir, rule,stim_mod, params_list, batch_shape)
     # neural_activity,test_trial,state_dict,y_hat,y_loc,e_size = _neuralactivity_dm(model_dir, rule,stim_mod, params_list, batch_shape)
     neural_activity = neural_activity.detach().numpy()
-    stim_ons = test_trial.ons
+    stim_ons = test_trial.on
     dt = test_trial.dt
     times_relate = {'stim_ons':stim_ons,'dt':dt,'stim_dur':stim_times}
     
@@ -283,7 +283,7 @@ def neuralactivity_dm(model_dir,**kwargs):
 
 def neuralactivity_color_dm(model_dir,**kwargs):
     rule = 'coltargdm'
-    stim_mod = 1 # 1 is fine task 2 is coarse task
+    stim_mod = 2 # 1 is fine task 2 is coarse task
     if stim_mod == 1:
         stim1_coh = np.ones(9)*1.5
         stim1_loc = np.array([-12,-6,-1,-0.5,0,0.5,1,6,12])*6/360*np.pi+np.pi
@@ -336,9 +336,9 @@ def neuralactivity_color_dm(model_dir,**kwargs):
     neural_activity,test_trial,state_dict,y_hat,y_loc,effective_weight,hp = _neuralactivity_dm(model_dir, rule,stim_mod, params_list, batch_shape)    
     # neural_activity,test_trial,state_dict,y_hat,y_loc,e_size = _neuralactivity_dm(model_dir, rule,stim_mod, params_list, batch_shape)
     neural_activity = neural_activity.detach().numpy()
-    stim1_ons = test_trial.ons
+    stim1_on = test_trial.on
     dt = test_trial.dt
-    times_relate = {'stim_ons':stim1_ons,'dt':dt,'stim_dur':stim1_times}  
+    times_relate = {'stim_ons':stim1_on,'dt':dt,'stim_dur':stim1_times}  
     
     X = test_trial.x
     y_dir = get_y_direction(y_hat,y_loc) 
@@ -532,10 +532,10 @@ def neuralactivity_color_dm(model_dir,**kwargs):
     # plt.figure()# plot neural activity according to saccade direction
     # sacdir_col_list = np.sign(sac_per_trial)*2+np.sign(T1loc_per_trial)
     sacdir_list = np.sign(sac_per_trial)
-    stim_ons = test_trial.ons
+    stim_on = test_trial.on
     dt = test_trial.dt
     stim_times = [1000]
-    times_relate = {'stim_ons':stim_ons,'dt':dt,'stim_dur':stim_times}
+    times_relate = {'stim_on':stim_on,'dt':dt,'stim_dur':stim_times}
     plot_population(neural_activity[:,:,:hidden1_size],sacdir_list,times_relate)
     plt.suptitle('hidden1_sac')
     SetFigure(15)
@@ -564,32 +564,32 @@ def neuralactivity_color_dm(model_dir,**kwargs):
     figname = 'saccade_div'
     plt.title('saccade_div')
     L1_sactime = get_divergence(sacdir_list[select_0heading],neural_activity[:,select_0heading,:hidden1_size],times_relate,rule_name,rule=rule,figname=figname,figname_append = kwargs['figname_append'],iarea=1,para=h1sac_para)
-    plot_divergence(sacdir_list[select_0heading],neural_activity[:,select_0heading,:hidden1_size],times_relate,rule_name,rule=rule,figname=figname,figname_append = kwargs['figname_append'],iarea=1,para=h1sac_para)
-    # plot_divergence(sacdir_list,neural_activity[:,:,:hidden1_size],times_relate,rule_name,rule=rule,figname=figname,figname_append = kwargs['figname_append'],iarea=1,para=h1para)
+    # plot_divergence(sacdir_list[select_0heading],neural_activity[:,select_0heading,:hidden1_size],times_relate,rule_name,rule=rule,figname=figname,figname_append = kwargs['figname_append'],iarea=1,para=h1sac_para)
+    plot_divergence(sacdir_list,neural_activity[:,:,:hidden1_size],times_relate,rule_name,rule=rule,figname=figname,figname_append = kwargs['figname_append'],iarea=1,para=h1sac_para)
     SetFigure(15)
     plt.show()
     if not hp.get("hidden_size2") is None:
-        plot_divergence(sacdir_list[select_0heading],neural_activity[:,select_0heading,hidden1_size:],times_relate,rule_name,rule=rule,figname=figname,figname_append = kwargs['figname_append'],iarea=2,para=h2sac_para)
+        # plot_divergence(sacdir_list[select_0heading],neural_activity[:,select_0heading,hidden1_size:],times_relate,rule_name,rule=rule,figname=figname,figname_append = kwargs['figname_append'],iarea=2,para=h2sac_para)
         SetFigure(15)
         plt.show()
-        # plot_divergence(sacdir_list,neural_activity[:,:,hidden1_size:],times_relate,rule_name,rule=rule,figname=figname,figname_append = kwargs['figname_append'],iarea=2,para=h2para)
+        plot_divergence(sacdir_list,neural_activity[:,:,hidden1_size:],times_relate,rule_name,rule=rule,figname=figname,figname_append = kwargs['figname_append'],iarea=2,para=h2sac_para)
         L2_sactime = get_divergence(sacdir_list[select_0heading],neural_activity[:,select_0heading,hidden1_size:],times_relate,rule_name,rule=rule,figname=figname,figname_append = kwargs['figname_append'],iarea=2,para=h2sac_para)
     plt.savefig("./lunwenfigure/sac.svg")
     
     plt.figure(figsize=(10, 6))
     figname = 'choice_div'
     plt.title('choice_div')
-    # plot_conditioned_divergence(choice_per_trial,heading_per_trial,neural_activity[:,:,:hidden1_size],times_relate,rule_name,rule=rule,figname=figname,figname_append = kwargs['figname_append'],para=h1para)
+    plot_conditioned_divergence(choice_per_trial,heading_per_trial,neural_activity[:,:,:hidden1_size],times_relate,rule_name,rule=rule,figname=figname,figname_append = kwargs['figname_append'],iarea=1,para=h1abs_para)
     heading0_choice = choice_per_trial[select_0heading]
     heading0_h1_activity = neural_activity[:,select_0heading,:hidden1_size]
     heading0_h2_activity = neural_activity[:,select_0heading,hidden1_size:]
-    plot_divergence(heading0_choice,heading0_h1_activity,times_relate,rule_name,rule=rule,figname=figname,figname_append = kwargs['figname_append'],iarea=1,para=h1abs_para)
+    # plot_divergence(heading0_choice,heading0_h1_activity,times_relate,rule_name,rule=rule,figname=figname,figname_append = kwargs['figname_append'],iarea=1,para=h1abs_para)
     SetFigure(15)
     plt.show()
     L1_choicetime = get_divergence(heading0_choice,heading0_h1_activity,times_relate,rule_name,rule=rule,figname=figname,figname_append = kwargs['figname_append'],iarea=1,para=h1abs_para)
     if not hp.get("hidden_size2") is None:
-        # plot_conditioned_divergence(choice_per_trial,heading_per_trial,neural_activity[:,:,hidden1_size:],times_relate,rule_name,rule=rule,figname=figname,figname_append = kwargs['figname_append'],para=h2para)
-        plot_divergence(heading0_choice,heading0_h2_activity,times_relate,rule_name,rule=rule,figname=figname,figname_append = kwargs['figname_append'],iarea=2,para=h2abs_para)
+        plot_conditioned_divergence(choice_per_trial,heading_per_trial,neural_activity[:,:,hidden1_size:],times_relate,rule_name,rule=rule,figname=figname,figname_append = kwargs['figname_append'],iarea=2,para=h2abs_para)
+        # plot_divergence(heading0_choice,heading0_h2_activity,times_relate,rule_name,rule=rule,figname=figname,figname_append = kwargs['figname_append'],iarea=2,para=h2abs_para)
         SetFigure(15)
         plt.show()
         L2_choicetime = get_divergence(heading0_choice,heading0_h2_activity,times_relate,rule_name,rule=rule,figname=figname,figname_append = kwargs['figname_append'],iarea=2,para=h2abs_para)   

@@ -16,8 +16,11 @@ from scipy.optimize import curve_fit
 import mytask
 from mytask import generate_trials, rule_name, get_dist
 
-import mynetwork_new3
-from mynetwork_new3 import Net
+# import mynetwork_new3
+# from mynetwork_new3 import Net
+
+import mynetwork8
+from mynetwork8 import Net
 
 from mytools import popvec,get_y_direction
 import matplotlib.pyplot as plt
@@ -138,7 +141,7 @@ def neuralactivity_color_dm(model_dir,**kwargs):
     neural_activity,test_trial,state_dict,y_hat,y_loc,effective_weight,hp = _neuralactivity_dm(model_dir, rule,stim_mod, params_list, batch_shape)    
     x,y,y_loc,c_mask = test_trial.x,test_trial.y,test_trial.y_loc,test_trial.c_mask
 
-    stim1_ons = test_trial.ons
+    stim1_ons = test_trial.on
     dt = test_trial.dt
     times_relate = {'stim_ons':stim1_ons,'dt':dt,'stim_dur':stim1_times}  
     

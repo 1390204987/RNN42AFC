@@ -20,14 +20,14 @@ import  mytask
 # import mynetworkhebb
 # from mynetworkhebb import Net
 
-# import mynetwork_new7
-# from mynetwork_new7 import Net
+# import mynetwork_new8
+# from mynetwork_new8 import Net
 # 
 import mynetwork_new3
 from mynetwork_new3 import Net
 # 
-# import mynetwork3
-# from  mynetwork3 import Net
+# import mynetwork8
+# from  mynetwork8 import Net
 
 # import mynetwork1hidden
 # from mynetwork1hidden import Net
@@ -67,7 +67,7 @@ def get_default_hp(ruleset):
             # 'rule_start': 1+num_ring*n_eachring,
             'rule_start': 1+num_ring*n_eachring,
             # Stopping performance
-            'target_perf': {'dm':0.98,'coltargdm':0.95,'delaysaccade':0.90},
+            'target_perf': {'dm':0.95,'coltargdm':0.95,'delaysaccade':0.90},
             'n_input': n_input,
             'n_input_heading': n_input_heading,
             'n_input_targcolor':n_input_targcolor,
@@ -83,7 +83,7 @@ def get_default_hp(ruleset):
             'sigma_feedback':0.1,
             # recurrent connectivity
             'recur1':0.1,
-            'recur2':1,
+            'recur2':0.2,
             'fforwardstren':1,
             'fbackstren':1,                
             # 'sigma_x': 0.0001,
@@ -97,7 +97,7 @@ def get_default_hp(ruleset):
             'L1_w':0,
             'L2_w':0,
             'L1_tau':20,
-            'L2_tau':100,
+            'L2_tau':200,
             'dt': 20,
             'rng': np.random.RandomState(seed),
             'easy_task': 1,
@@ -282,6 +282,7 @@ def train(netname,
         else:
             weight_input2hidden = net.rnn.input2h.weight.data.to(device)  # input2hidden weight
             weight_h2heffective = net.rnn.h2h.effective_weight().data.to(device) # h2h weight
+            # weight_h2heffective = net.rnn.h2h.weight().data.to(device) # h2h weight
             weight_h2O = net.fc.weight.data.to(device) #h2Output weight                    
             w_current = [weight_input2hidden,weight_h2heffective,weight_h2O]         
             net_weight = [net.rnn.input2h.weight.detach(),net.rnn.h2h.effective_weight().detach(),net.fc.weight.detach()]
@@ -422,7 +423,7 @@ def train_para(device,hp,log,net,rule_train_now,netname,savepath,
             if i_rule_train == 0:
                 loss = torch.mean(torch.sum(torch.square(y_shaped-y_hat_shaped)*mask_shaped,1)).to(device)
             else:
-                loss = torch.mean(torch.sum(torch.square(y_shaped-y_hat_shaped)*mask_shaped,1))+penalty.to(device)   
+                loss = torch.mean(torch.sum(torch.square(y_shaped-y_hat_shaped)*mask_shaped,1))+penalty 
             L1_h_norm = torch.mean(torch.abs(y_hat_shaped)).to(device)
             L2_h_norm = torch.mean(torch.pow(y_hat_shaped,2)).to(device)
             for param in net.parameters():
@@ -511,9 +512,10 @@ def train_para(device,hp,log,net,rule_train_now,netname,savepath,
     return task_trainagain
     
 netname = 'checkgpu'
-# train(netname, ruleset = 'coltargdm')
 savepath = './checkpoint/'
-train(netname, savepath, ruleset = 'coltargdm')
+train(netname, savepath,ruleset = 'coltargdm')
+
+# train(netname, savepath, ruleset = '2AFC')
 # basednet = './checkpoint/coltargdm802hiddennet2keep.t7'
 # netname = '2AFC802hiddennet2'
 # netname = 'continue2hiddennet2'

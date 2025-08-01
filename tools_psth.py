@@ -21,8 +21,8 @@ def plot_population(neural_activity,var_list,times_relate):
     plot population activity change along time in a trial.
     '''    
     dt = times_relate['dt']
-    stim_ons = times_relate['stim_ons']
-    stim_on = np.unique(stim_ons)*dt
+    stim_on_ = times_relate['stim_on']
+    stim_on = np.unique(stim_on_)*dt
     stim_dur = times_relate['stim_dur']
     stim_end = stim_on + stim_dur[0]
     time_steps = np.arange(neural_activity.shape[0])*dt
