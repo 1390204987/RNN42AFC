@@ -108,6 +108,9 @@ class EIRecLinear(nn.Module):
         # others remain unconstrained
 
         W_raw = self.weight
+        
+        # print(f"权重(weight)设备: {self.weight.device}")
+        # print(f"正掩码(positive_mask)设备: {self.positive_mask.device}")
         W_eff = self.positive_mask * (W_raw**2) + (1 - self.positive_mask) * W_raw
         return W_eff * self.mask
         
@@ -130,7 +133,7 @@ class ReadinLinear(nn.Module):
         in_features = in_feature_heading + in_feature_targcolor + in_feature_rules
         out_features = hidden_size1 + hidden_size2
         self.weight = nn.Parameter(torch.Tensor(out_features,in_features))
-        
+        # self.weight = self.weight.to(device)
         mask11 = np.ones((hidden_size1,in_feature_heading))
         mask12 = np.zeros((hidden_size2,in_feature_heading))
         mask21 = np.zeros((hidden_size1,in_feature_targcolor)) 
@@ -259,7 +262,7 @@ class Net(nn.Module):
         hidden_size2: int, second hidden layer size
         rnn: str, type of RNN, rnn, or lstm
     """
-    def __init__(self,hp,**kwargs):
+    def __init__(self,hp,device,**kwargs):
         super().__init__()
             
         insize_heading = hp['n_input_heading']
@@ -286,7 +289,8 @@ class Net(nn.Module):
         # fforwardstren = 1
         # fbackstren = 0.3
         # self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        self.device = torch.device("cpu")
+        # self.device = torch.device("cpu")
+        self.device = device
         self.rnn = EIRNN(self.device,insize_heading,insize_targcolor,insize_rules,
                           hidden_size1, hidden_size2,n_rule,n_eachring,num_ring,recur1,recur2,fforwardstren,fbackstren,
                          sigma_feedforward,sigma_feedback,L1_tau,L2_tau,sigma_rec1=sigma_rec1,sigma_rec2=sigma_rec2,**kwargs)            

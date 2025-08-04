@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 def plot_input2neuron_connectivity(effective_weight,heading_selectivity,rule_name,**kwargs):
     
     Winput2neuron = effective_weight['I2H_weight']
-    Winput2neuron = Winput2neuron.detach().numpy()
+    Winput2neuron = Winput2neuron.detach().cpu().numpy()
     if len(heading_selectivity)== 0:
         sort_ind = np.arange(0,Winput2neuron.shape[0],1,dtype=int)
     else:
@@ -35,7 +35,7 @@ def plot_input2neuron_connectivity(effective_weight,heading_selectivity,rule_nam
 def plot_h2h_connectivity(effective_weight,heading_selectivity,saccade_selectivity,rule_name,**kwargs):
     
     Wh2h = effective_weight['H2H_weight']
-    Wh2h = Wh2h.detach().numpy()
+    Wh2h = Wh2h.detach().cpu().numpy()
     # Wlim = np.max(np.abs(Wh2h))
     Wlim = np.percentile(np.abs(Wh2h), 95)
     if len(heading_selectivity) == 0:
@@ -65,7 +65,7 @@ def plot_h2h_connectivity(effective_weight,heading_selectivity,saccade_selectivi
 def plot_h2output_connectivity(effective_weight,saccade_selectivity,rule_name,**kwargs):
     
     Wh2output = effective_weight['H2O_weight']
-    Wh2output = Wh2output.detach().numpy()
+    Wh2output = Wh2output.detach().cpu().numpy()
     # Wlim = np.max(np.abs(Wh2output))
     Wlim = np.percentile(np.abs(Wh2output), 95)
     if len(saccade_selectivity) == 0:
@@ -93,7 +93,7 @@ def plot_h2output_connectivity(effective_weight,saccade_selectivity,rule_name,**
 def plot_connectivity(state_dict,**kwargs):
     
     Winput2neuron = state_dict['rnn.input2h.weight']
-    Winput2neuron = Winput2neuron.detach().numpy()
+    Winput2neuron = Winput2neuron.detach().cpu().numpy()
     
     Wh2h = state_dict['rnn.h2h.weight']
     Wh2h = Wh2h.detach().numpy()

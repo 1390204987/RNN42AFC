@@ -24,10 +24,10 @@ from mytask import generate_trials, rule_name, get_dist
 # import mynetworkhebb
 # from mynetworkhebb import Net
           
-import mynetwork_new3
-from mynetwork_new3 import Net
-# import mynetwork8
-# from mynetwork8 import Net
+# import mynetwork_new3
+# from mynetwork_new3 import Net
+import mynetwork8
+from mynetwork8 import Net
 
 # import mynetwork1hidden
 # from mynetwork1hidden import Net
@@ -55,7 +55,7 @@ BLUES = [np.array([0.13333333, 0.13333333, 0.13333333, 1.        ]),
 
 
 ################ Psychometric - Varying Coherence #############################
-def _neuralactivity_dm(model_dir, rule, stim_mod, params_list, batch_shape):
+def _neuralactivity_dm(model_dir, rule, stim_mod, params_list, batch_shape,device):
     """Base function for computing psychometric performance in 2AFC tasks
 
     Args:
@@ -79,7 +79,7 @@ def _neuralactivity_dm(model_dir, rule, stim_mod, params_list, batch_shape):
     # hp['fforwardstren']=0.1
     hp['fbackstren']=0
     # hp['sigma_x'] = 0.1,
-    net = Net(hp,dt = hp['dt'])
+    net = Net(hp,device,dt = hp['dt']).to(device)
     #remove prefixe "module"
     state_dict = {k.replace("module.",""): v for k, v in state_dict.items()}
     msg = net.load_state_dict(state_dict, strict=False)
@@ -87,11 +87,11 @@ def _neuralactivity_dm(model_dir, rule, stim_mod, params_list, batch_shape):
  
     ydatas = list()
     for params in params_list:
-        test_trial = generate_trials(rule,hp,'psychometric',stim_mod, params = params)
+        test_trial = generate_trials(rule,hp,device,'psychometric',stim_mod, params = params)
         x,y,y_loc,c_mask = test_trial.x,test_trial.y,test_trial.y_loc,test_trial.c_mask
-        x = torch.from_numpy(x).type(torch.float)
-        y = torch.from_numpy(y).type(torch.float)    
-        c_mask = torch.from_numpy(c_mask).type(torch.float)
+        # x = torch.from_numpy(x).type(torch.float)
+        # y = torch.from_numpy(y).type(torch.float)    
+        # c_mask = torch.from_numpy(c_mask).type(torch.float)
         inputs = x
         y_hat,activity = net(inputs)    
         
@@ -117,7 +117,7 @@ def _neuralactivity_dm(model_dir, rule, stim_mod, params_list, batch_shape):
     # return activity, test_trial, state_dict ,y_hat,y_loc,e_size,
     return activity, test_trial, state_dict, y_hat,y_loc,effective_weight,hp
 
-def neuralactivity_delaysac(model_dir,**kwargs):
+def neuralactivity_delaysac(model_dir,device,**kwargs):
     rule = 'delaysaccade'
     stim_mod = 1
     stim_loc = np.linspace(0,315,num=8)/180*np.pi
@@ -139,7 +139,7 @@ def neuralactivity_delaysac(model_dir,**kwargs):
         params_list.append(params)
         
     neural_activity,test_trial,state_dict,y_hat,y_loc,effective_weight,hp = _neuralactivity_dm(
-        model_dir, rule,stim_mod, params_list, batch_shape)
+        model_dir, rule,stim_mod, params_list, batch_shape,device)
     neural_activity = neural_activity.detach().numpy()
     stim_ons = test_trial.ons
     dt = test_trial.dt
@@ -151,7 +151,7 @@ def neuralactivity_delaysac(model_dir,**kwargs):
     plot_h2output_connectivity(effective_weight,[],rule_name,rule=rule,figname_append = kwargs['figname_append'])    
     # plot_population(neural_activity,input_list,times_relate)
     
-def neuralactivity_dm(model_dir,**kwargs):
+def neuralactivity_dm(model_dir,device,**kwargs):
     rule = 'dm'
     stim_mod = 1   # 1 is fine task 2 is coarse task
     if stim_mod == 1:
@@ -281,7 +281,7 @@ def neuralactivity_dm(model_dir,**kwargs):
         # plot_conditioned_divergence(choice_per_trial,heading_per_trial,neural_activity[:,:,hidden1_size:],times_relate,rule_name,rule=rule,figname=figname,figname_append = kwargs['figname_append'],para=h2para)
         plot_divergence(heading0_saccade,heading0_h2_activity,times_relate,rule_name,rule=rule,figname=figname,figname_append = kwargs['figname_append'],iarea=2,para=h2para)
 
-def neuralactivity_color_dm(model_dir,**kwargs):
+def neuralactivity_color_dm(model_dir,device,**kwargs):
     rule = 'coltargdm'
     stim_mod = 2 # 1 is fine task 2 is coarse task
     if stim_mod == 1:
@@ -292,11 +292,11 @@ def neuralactivity_color_dm(model_dir,**kwargs):
         unique_n_stim = len(stim1_loc)
         condition_list = {'stim_coh':stim1_coh,'stim_loc':stim1_loc}
     elif stim_mod ==2:
-        unique_stim1_coh = np.array([1,0.1,0.05,0])
+        unique_stim1_coh = np.array([1,0.5,0.1,0.05,0])
         unique_stim1_loc = np.array([-12,12])*6/360*np.pi+np.pi
         relative_stim1_loc = np.outer(unique_stim1_coh, np.sign(unique_stim1_loc - np.pi)).flatten()+np.pi
         stim1_coh = np.repeat(unique_stim1_coh, 2)
-        stim1_loc = np.tile(unique_stim1_loc, 4) 
+        stim1_loc = np.tile(unique_stim1_loc, 5) 
         relative_stim1_loc = stim1_coh*np.sign(stim1_loc-np.pi)+np.pi
         n_rep = 100
         unique_n_stim = len(unique_stim1_coh)*len(unique_stim1_loc)
@@ -333,9 +333,9 @@ def neuralactivity_color_dm(model_dir,**kwargs):
         xdatas = [stim1_loc]
     elif stim_mod == 2:
         xdatas = [relative_stim1_loc]
-    neural_activity,test_trial,state_dict,y_hat,y_loc,effective_weight,hp = _neuralactivity_dm(model_dir, rule,stim_mod, params_list, batch_shape)    
+    neural_activity,test_trial,state_dict,y_hat,y_loc,effective_weight,hp = _neuralactivity_dm(model_dir, rule,stim_mod, params_list, batch_shape,device)    
     # neural_activity,test_trial,state_dict,y_hat,y_loc,e_size = _neuralactivity_dm(model_dir, rule,stim_mod, params_list, batch_shape)
-    neural_activity = neural_activity.detach().numpy()
+    neural_activity = neural_activity.detach().cpu().numpy()
     stim1_on = test_trial.on
     dt = test_trial.dt
     times_relate = {'stim_ons':stim1_on,'dt':dt,'stim_dur':stim1_times}  
@@ -343,8 +343,10 @@ def neuralactivity_color_dm(model_dir,**kwargs):
     X = test_trial.x
     y_dir = get_y_direction(y_hat,y_loc) 
     # only analysis trials with the output direction belongs to the given target 
+    y_dir = y_dir.detach().cpu().numpy()
     complete_trial_ind = np.where(np.isnan(y_dir)==False)
-    y_hat = y_hat.detach().numpy()
+    y_hat = y_hat.detach().cpu().numpy()
+    y_loc = y_loc.detach().cpu().numpy()
     y_hat_end = y_hat[-1]
     y_loc_end = y_loc[-1]
     correct_rate = np.sum((y_loc_end-y_dir)==0)/len(y_dir)
@@ -633,11 +635,12 @@ def plot_corr_heading_color_sac(heading_selectivity,saccade_selectivity,color_se
 # neuralactivity_delaysac(model_dir,figname_append='2hidden')
 
 # model_dir = './checkpoint/2AFC802hiddennet2keep.t7'    
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 for i in [0]:
     figname_suffix = f'checkgpu/{i}'
     model_dir = './checkpoint/checkgpu.t7'         
     # model_dir = 'I:/model/data_simulation/neuralactivityinputtask/checkpoint_batchnew1/0421colorhdnet4.t7'
-    neuralactivity_color_dm(model_dir,figname_append=figname_suffix) 
+    neuralactivity_color_dm(model_dir,device,figname_append=figname_suffix) 
     # psychometric_color_dm(model_dir,figname_append=figname_suffix)
     # neuralactivity_dm(model_dir,figname_append='continue2AFC2hidden2') 
 

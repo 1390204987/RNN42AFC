@@ -22,12 +22,12 @@ import  mytask
 
 # import mynetwork_new8
 # from mynetwork_new8 import Net
-# 
-import mynetwork_new3
-from mynetwork_new3 import Net
-# 
-# import mynetwork8
-# from  mynetwork8 import Net
+
+# import mynetwork_new3
+# from mynetwork_new3 import Net
+
+import mynetwork8
+from  mynetwork8 import Net
 
 # import mynetwork1hidden
 # from mynetwork1hidden import Net
@@ -60,7 +60,7 @@ def get_default_hp(ruleset):
     # n_output = n_outputdir+1
     hp = {
             # batch size for training
-            'batch_size_train': 64,
+            'batch_size_train': 216,
             # batch_size for testing
             'batch_size_test': 64,        
             'ruleset': ruleset,
@@ -83,7 +83,7 @@ def get_default_hp(ruleset):
             'sigma_feedback':0.1,
             # recurrent connectivity
             'recur1':0.1,
-            'recur2':0.2,
+            'recur2':0.1,
             'fforwardstren':1,
             'fbackstren':1,                
             # 'sigma_x': 0.0001,
@@ -113,10 +113,10 @@ def get_default_hp(ruleset):
 
 def get_loss(device,hp, net, trial):
     x,y,y_loc,c_mask = trial.x,trial.y,trial.y_loc,trial.c_mask
-    x = torch.from_numpy(x).type(torch.float).to(device)
-    y = torch.from_numpy(y).type(torch.float).to(device)
-    y_loc_tensor = torch.from_numpy(y_loc).type(torch.float).to(device)
-    c_mask = torch.from_numpy(c_mask).type(torch.float).to(device)
+    # x = torch.from_numpy(x).type(torch.float).to(device)
+    # y = torch.from_numpy(y).type(torch.float).to(device)
+    # y_loc_tensor = torch.from_numpy(y_loc).type(torch.float).to(device)
+    # c_mask = torch.from_numpy(c_mask).type(torch.float).to(device)
     inputs = x
     
     y_hat,activity = net(inputs)
@@ -127,7 +127,7 @@ def get_loss(device,hp, net, trial):
 
     loss = torch.mean(torch.sum(torch.square(y_shaped-y_hat_shaped)*mask_shaped,1)).to(device)
 
-    perf = np.mean(get_perf(y_hat,y_loc))
+    perf = torch.mean(get_perf(y_hat,y_loc))
     
     return loss, perf
 
@@ -160,7 +160,7 @@ def do_eval(device,hp,net,log,rule_train,netname,savepath):
     # for i_rep in range(n_rep):
     for i_rule_test in rule_train:
         trial = mytask.generate_trials(
-                i_rule_test, hp, 'random',stim_mod=1, batch_size=batch_size_test)
+                i_rule_test, hp,device, 'random',stim_mod=1, batch_size=batch_size_test)
         loss_test,perf_test = get_loss(device,hp,net, trial) 
         perf_tmp.append(perf_test)
             
@@ -186,7 +186,7 @@ def do_eval(device,hp,net,log,rule_train,netname,savepath):
 
 def train(netname,          
           savepath,
-          device='gpu',
+          device,
           hp=None,
           max_steps=1e7,
           display_epoch=20,
@@ -211,7 +211,7 @@ def train(netname,
         training configuration is stored at model_dir/hp.json
     '''    
     # device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    device = torch.device("cpu")
+    # # device = torch.device("cpu")
     print(device)
     
     # Network parameters
@@ -224,13 +224,13 @@ def train(netname,
         modelparams = torch.load(basedon)
         state_dict = modelparams["state_dict"]
         hp = default_hp
-        net = Net(hp,dt = hp['dt']).to(device) 
+        net = Net(hp,device,dt = hp['dt'])
         state_dict = {k.replace("module.",""): v for k, v in state_dict.items()}
         msg = net.load_state_dict(state_dict, strict=False)
         print("Load pretrained model with msg: {}".format(msg))
     else:
         hp = default_hp        
-        net = Net(hp,dt = hp['dt']).to(device)    
+        net = Net(hp,device,dt = hp['dt'])
     
     net.to(device)
      
@@ -405,14 +405,14 @@ def train_para(device,hp,log,net,rule_train_now,netname,savepath,
             # Generate a random batch of trials.
             # Each batch has the same trial length
             trial = mytask.generate_trials(
-                    rule_train_now, hp, 'random',stim_mod=1,noise_on=True,
+                    rule_train_now, hp,device, 'random',stim_mod=1,noise_on=True,
                     batch_size=hp['batch_size_train'])
             
             x,y,y_loc,c_mask = trial.x,trial.y,trial.y_loc,trial.c_mask
-            x = torch.from_numpy(x).type(torch.float).to(device)
-            y = torch.from_numpy(y).type(torch.float).to(device)
-            y_loc_tensor = torch.from_numpy(y_loc).type(torch.float).to(device) 
-            c_mask = torch.from_numpy(c_mask).type(torch.float).to(device)
+            # x = torch.from_numpy(x).type(torch.float).to(device)
+            # y = torch.from_numpy(y).type(torch.float).to(device)
+            # y_loc_tensor = torch.from_numpy(y_loc).type(torch.float).to(device) 
+            # c_mask = torch.from_numpy(c_mask).type(torch.float).to(device)
             inputs = x
             optimizer.zero_grad()   # zero the gradient buffers
             y_hat,activity = net(inputs)
@@ -421,7 +421,7 @@ def train_para(device,hp,log,net,rule_train_now,netname,savepath,
             y_hat_shaped = torch.reshape(y_hat,(-1,n_output))
             mask_shaped = torch.reshape(c_mask,(-1,n_output))
             if i_rule_train == 0:
-                loss = torch.mean(torch.sum(torch.square(y_shaped-y_hat_shaped)*mask_shaped,1)).to(device)
+                loss = torch.mean(torch.sum(torch.square(y_shaped-y_hat_shaped)*mask_shaped,1))
             else:
                 loss = torch.mean(torch.sum(torch.square(y_shaped-y_hat_shaped)*mask_shaped,1))+penalty 
             L1_h_norm = torch.mean(torch.abs(y_hat_shaped)).to(device)
@@ -439,7 +439,7 @@ def train_para(device,hp,log,net,rule_train_now,netname,savepath,
             if hp['L2_w']>0:
                 loss+=loss+L2_w_norm            
             
-            perf = np.mean(get_perf(y_hat,y_loc))
+            perf = torch.mean(get_perf(y_hat,y_loc))
             
             # Continual learning with intelligent synapses
             if hasattr(net,'hebb'):
@@ -455,7 +455,10 @@ def train_para(device,hp,log,net,rule_train_now,netname,savepath,
             
             # This will compute the gradient BEFORE train step
             # retain_graph=True
+            # net.rnn.input2h.weight.requires_grad_(True)
             # weight_input2hidden.retain_grad()
+            
+            
             
             loss.backward()
             
@@ -502,6 +505,10 @@ def train_para(device,hp,log,net,rule_train_now,netname,savepath,
                 o.to(device)-(w_n.to(device)-w_p.to(device))*w_g.to(device) for o,w_n,w_p,w_g in
                 zip(omega0,w_now,w_prev,w_grad)
                 ]
+            # omega0 = [
+            #     o-(w_n-w_p)*w_g for o,w_n,w_p,w_g in
+            #     zip(omega0,w_now,w_prev,w_grad)
+            #     ]
             running_loss = loss.item()
             epoch += 1
         
@@ -513,7 +520,9 @@ def train_para(device,hp,log,net,rule_train_now,netname,savepath,
     
 netname = 'checkgpu'
 savepath = './checkpoint/'
-train(netname, savepath,ruleset = 'coltargdm')
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+# device = torch.device("cpu")
+train(netname, savepath, device, ruleset = 'coltargdm')
 
 # train(netname, savepath, ruleset = '2AFC')
 # basednet = './checkpoint/coltargdm802hiddennet2keep.t7'

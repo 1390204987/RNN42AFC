@@ -138,6 +138,7 @@ class ReadinLinear(nn.Module):
         self.in_feature_heading = in_feature_heading
         self.in_feature_targcolor = in_feature_targcolor
         self.in_feature_rules = in_feature_rules
+        self.device = device
         in_features = in_feature_heading + in_feature_targcolor + in_feature_rules
         out_features = hidden_size1 + hidden_size2
         self.weight = nn.Parameter(torch.Tensor(out_features,in_features))
@@ -151,9 +152,9 @@ class ReadinLinear(nn.Module):
         mask1 = np.concatenate((mask11,mask21,mask31),axis=1)
         mask2 = np.concatenate((mask12,mask22,mask32),axis=1)
         mask = np.concatenate((mask1,mask2),axis=0)
-        self.mask = torch.tensor(mask,dtype=torch.float32).to(device)
+        self.mask = torch.tensor(mask,dtype=torch.float32).to(self.device)
         if bias:
-            self.bias = nn.Parameter(torch.Tensor(out_features)).to(device)
+            self.bias = nn.Parameter(torch.Tensor(out_features)).to(self.device)
         else:
             self.register_parameter('bias',None)
         self.reset_parameters()  
@@ -273,7 +274,7 @@ class Net(nn.Module):
         hidden_size2: int, second hidden layer size
         rnn: str, type of RNN, rnn, or lstm
     """
-    def __init__(self,hp,**kwargs):
+    def __init__(self,hp,device,**kwargs):
         super().__init__()
             
         insize_heading = hp['n_input_heading']
@@ -300,7 +301,8 @@ class Net(nn.Module):
         # fforwardstren = 1
         # fbackstren = 0.3
         # self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        self.device = torch.device("cpu")
+        # self.device = torch.device("cpu")
+        self.device = device
         self.rnn = EIRNN(self.device,insize_heading,insize_targcolor,insize_rules,
                           hidden_size1, hidden_size2,n_rule,n_eachring,num_ring,recur1,recur2,fforwardstren,fbackstren,
                          sigma_feedforward,sigma_feedback,L1_tau,L2_tau,sigma_rec1=sigma_rec1,sigma_rec2=sigma_rec2,**kwargs)            
