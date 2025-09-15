@@ -33,7 +33,7 @@ from scipy.stats import pearsonr
 # plt.close('all')
 THETA = 0.3 * np.pi
 
-def _neuralactivity_dm(model_dir, rule, stim_mod, params_list, batch_shape):
+def _neuralactivity_dm(model_dir, rule, stim_mod, params_list, batch_shape,device):
     """Base function for computing psychometric performance in 2AFC tasks
 
     Args:
@@ -57,7 +57,7 @@ def _neuralactivity_dm(model_dir, rule, stim_mod, params_list, batch_shape):
     # hp['fforwardstren']=0.1
     hp['fbackstren']=0.1
     # hp['sigma_x'] = 0.1,
-    net = Net(hp,dt = hp['dt'])
+    net = Net(hp,device,dt = hp['dt'])
     #remove prefixe "module"
     state_dict = {k.replace("module.",""): v for k, v in state_dict.items()}
     msg = net.load_state_dict(state_dict, strict=False)
@@ -65,11 +65,11 @@ def _neuralactivity_dm(model_dir, rule, stim_mod, params_list, batch_shape):
  
     ydatas = list()
     for params in params_list:
-        test_trial = generate_trials(rule,hp,'psychometric',stim_mod, params = params)
+        test_trial = generate_trials(rule,hp,device,'psychometric',stim_mod, params = params)
         x,y,y_loc,c_mask = test_trial.x,test_trial.y,test_trial.y_loc,test_trial.c_mask
-        x = torch.from_numpy(x).type(torch.float)
-        y = torch.from_numpy(y).type(torch.float)    
-        c_mask = torch.from_numpy(c_mask).type(torch.float)
+        # x = torch.from_numpy(x).type(torch.float)
+        # y = torch.from_numpy(y).type(torch.float)    
+        # c_mask = torch.from_numpy(c_mask).type(torch.float)
         inputs = x
         y_hat,activity = net(inputs)    
         
@@ -95,7 +95,7 @@ def _neuralactivity_dm(model_dir, rule, stim_mod, params_list, batch_shape):
     # return activity, test_trial, state_dict ,y_hat,y_loc,e_size,
     return activity, test_trial, state_dict ,y_hat,y_loc,effective_weight,hp
 
-def neuralactivity_color_dm(model_dir,**kwargs):
+def neuralactivity_color_dm(model_dir,device='cpu',**kwargs):
     rule = 'coltargdm'
     stim_mod = 1 # 1 is fine task 2 is coarse task
     if stim_mod == 1:
@@ -138,7 +138,7 @@ def neuralactivity_color_dm(model_dir,**kwargs):
         xdatas = [stim1_loc]
     elif stim_mod == 2:
         xdatas = [stim1_coh]
-    neural_activity,test_trial,state_dict,y_hat,y_loc,effective_weight,hp = _neuralactivity_dm(model_dir, rule,stim_mod, params_list, batch_shape)    
+    neural_activity,test_trial,state_dict,y_hat,y_loc,effective_weight,hp = _neuralactivity_dm(model_dir, rule,stim_mod, params_list, batch_shape,device)    
     x,y,y_loc,c_mask = test_trial.x,test_trial.y,test_trial.y_loc,test_trial.c_mask
 
     stim1_ons = test_trial.on
@@ -225,6 +225,7 @@ def neuralactivity_color_dm(model_dir,**kwargs):
     ax.spines['left'].set_linewidth(0.5)
 for i in [0]:
     figname_suffix = f'checkgpu/{i}'
-    model_dir = './checkpoint/checkgpu.t7'         
-    
-    neuralactivity_color_dm(model_dir,figname_append=figname_suffix) 
+    model_dir = './checkpoint/checkrelu.t7'         
+    # device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    device = "cpu"
+    neuralactivity_color_dm(model_dir,device=device,figname_append=figname_suffix) 

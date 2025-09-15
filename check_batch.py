@@ -23,8 +23,8 @@ from mytask import generate_trials, rule_name, get_dist
 
 # import mynetwork_new3
 # from mynetwork_new3 import Net
-import mynetwork4
-from mynetwork4 import Net
+import mynetwork8
+from mynetwork8 import Net
 
 from mytools import popvec,get_y_direction
 
@@ -55,7 +55,7 @@ def _neuralactivity_dm(model_dir, rule, stim_mod, params_list, batch_shape):
     modelparams = torch.load(model_dir)
     state_dict = modelparams["state_dict"]
     hp = modelparams["hp"]
-    hp["sigma_x"] = 0 
+    # hp["sigma_x"] = 0 
     net = Net(hp,dt = hp['dt'])
     #remove prefixe "module"
     state_dict = {k.replace("module.",""): v for k, v in state_dict.items()}
@@ -96,7 +96,7 @@ def _neuralactivity_dm(model_dir, rule, stim_mod, params_list, batch_shape):
 
 def neuralactivity_color_dm(model_dir,**kwargs):
     rule = 'coltargdm'
-    stim_mod = 1 # 1 is fine task 2 is coarse task
+    stim_mod = 2 # 1 is fine task 2 is coarse task
     if stim_mod == 1:
         stim1_coh = np.ones(13)*0.1
         stim1_loc = np.array([-12,-9,-6,-4.5,-3,-1.5,0,1.5,3,4.5,6,9,12])*6/360*np.pi+np.pi

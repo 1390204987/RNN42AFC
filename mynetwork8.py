@@ -36,23 +36,27 @@ class ReadoutLinear(nn.Module):
     """ 
     __constant__ = ['bias', 'in_features', 'out_features']
     
-    def __init__(self,device,hidden_size1,hidden_size2,out_features,bias=True):
+    def __init__(self,device,hidden_size1,hidden_size2,out_features,bias=True,seed=0):
         super().__init__()
         in_features = hidden_size1+hidden_size2
         self.out_features = out_features
+        self.seed = seed
         self.weight = nn.Parameter(torch.Tensor(out_features,in_features))
         mask1 = np.zeros((out_features,hidden_size1))
         mask2 = np.ones((out_features,hidden_size2))
         mask = np.concatenate((mask1,mask2),axis=1)
         self.mask = torch.tensor(mask,dtype=torch.float32).to(device)
         if bias:
-            self.bias = nn.Parameter(torch.Tensor(out_features)).to(device)
+            self.bias = nn.Parameter(torch.Tensor(out_features))
         else:
             self.register_parameter('bias', None)
         self.reset_parameters()
         
     def reset_parameters(self):
-        init.kaiming_uniform_(self.weight,a=math.sqrt(5))
+        # 创建generator
+        generator = torch.Generator(device=self.weight.device)
+        generator.manual_seed(self.seed)
+        init.kaiming_uniform_(self.weight,a=math.sqrt(5),generator=generator)
         if self.bias is not None:
             fan_in,_ = init._calculate_fan_in_and_fan_out(self.weight)
             bound = 1 / math.sqrt(fan_in)
@@ -75,11 +79,12 @@ class EIRecLinear(nn.Module):
     """
     __constant__ = ['bias','hidden_size1','hidden_size2']    
             
-    def __init__(self, device,hidden_size1,hidden_size2,bias=True,recurrency1=1,recurrency2=1,feedforward_stren=1,feedback_stren=1):
+    def __init__(self, device,hidden_size1,hidden_size2,bias=True,recurrency1=1,recurrency2=1,feedforward_stren=1,feedback_stren=1,seed=0):
         super().__init__()
         self.hidden_size1 = hidden_size1
         self.hidden_size2 = hidden_size2
         self.hidden_size = self.hidden_size1+self.hidden_size2
+        self.seed = seed
         self.weight = nn.Parameter(torch.Tensor(self.hidden_size,self.hidden_size))
         mask11 = np.ones((hidden_size1,hidden_size1))*recurrency1
         mask12 = np.ones((hidden_size1,hidden_size2))*feedback_stren
@@ -98,14 +103,16 @@ class EIRecLinear(nn.Module):
         self.positive_mask = torch.tensor(pos_mask, dtype=torch.float32).to(device)
 
         if bias:
-            self.bias = nn.Parameter(torch.Tensor(self.hidden_size)).to(device)
+            self.bias = nn.Parameter(torch.Tensor(self.hidden_size))
         else:
             self.registser_parameter('bias',None)
             
         self.reset_parameters()            
         
     def reset_parameters(self):
-        init.kaiming_uniform_(self.weight,a=math.sqrt(5))
+        generator = torch.Generator(device=self.weight.device)
+        generator.manual_seed(self.seed)
+        init.kaiming_uniform_(self.weight,a=math.sqrt(5),generator=generator)
         if self.bias is not None:
             fan_in,_=init._calculate_fan_in_and_fan_out(self.weight)
             bound = 1/math.sqrt(fan_in)
@@ -133,12 +140,13 @@ class ReadinLinear(nn.Module):
     """
     __constant__ = ['bias','in_features']     
     
-    def __init__(self,device,in_feature_heading,in_feature_targcolor,in_feature_rules,hidden_size1,hidden_size2,bias=True):
+    def __init__(self,device,in_feature_heading,in_feature_targcolor,in_feature_rules,hidden_size1,hidden_size2,bias=True,seed=0):
         super().__init__()
         self.in_feature_heading = in_feature_heading
         self.in_feature_targcolor = in_feature_targcolor
         self.in_feature_rules = in_feature_rules
         self.device = device
+        self.seed = seed
         in_features = in_feature_heading + in_feature_targcolor + in_feature_rules
         out_features = hidden_size1 + hidden_size2
         self.weight = nn.Parameter(torch.Tensor(out_features,in_features))
@@ -146,21 +154,23 @@ class ReadinLinear(nn.Module):
         mask11 = np.ones((hidden_size1,in_feature_heading))
         mask12 = np.zeros((hidden_size2,in_feature_heading))
         mask21 = np.zeros((hidden_size1,in_feature_targcolor)) 
-        mask22 = np.ones((hidden_size2,in_feature_targcolor))
+        mask22 = np.ones((hidden_size2,in_feature_targcolor)) 
         mask31 = np.zeros((hidden_size1,in_feature_rules))
-        mask32 = np.zeros((hidden_size2,in_feature_rules))
+        mask32 = np.ones((hidden_size2,in_feature_rules))
         mask1 = np.concatenate((mask11,mask21,mask31),axis=1)
         mask2 = np.concatenate((mask12,mask22,mask32),axis=1)
         mask = np.concatenate((mask1,mask2),axis=0)
         self.mask = torch.tensor(mask,dtype=torch.float32).to(self.device)
         if bias:
-            self.bias = nn.Parameter(torch.Tensor(out_features)).to(self.device)
+            self.bias = nn.Parameter(torch.Tensor(out_features))
         else:
             self.register_parameter('bias',None)
         self.reset_parameters()  
     
     def reset_parameters(self):
-        init.kaiming_uniform_(self.weight,a=math.sqrt(5))
+        generator = torch.Generator(device=self.weight.device)
+        generator.manual_seed(self.seed)
+        init.kaiming_uniform_(self.weight,a=math.sqrt(5),generator=generator)
         if self.bias is not None:
             fan_in,_ = init._calculate_fan_in_and_fan_out(self.weight)
             bound = 1/math.sqrt(fan_in)
@@ -185,7 +195,7 @@ class EIRNN(nn.Module):
     def __init__(self, device,insize_heading,insize_targcolor,insizse_rules,
                  hidden_size1, hidden_size2,n_rule,n_eachring,num_ring, 
                  recur1,recur2,fforwardstren,fbackstren,sigma_feedforward,sigma_feedback,L1_tau,L2_tau,
-                 dt=None, sigma_rec1=0.1,sigma_rec2=0.1, **kwargs):
+                 dt=None, sigma_rec1=0.1,sigma_rec2=0.1,seed=0,**kwargs):
         super().__init__()
         # self.input_size = input_size
         self.hidden_size = hidden_size1+hidden_size2
@@ -197,6 +207,7 @@ class EIRNN(nn.Module):
         self.L1_tau = L1_tau
         self.L2_tau = L2_tau
         self.tau = 30
+        self.seed = seed
         if dt is None:
             alpha = 1
         else:
@@ -219,8 +230,8 @@ class EIRNN(nn.Module):
             # self.sigma_feedforward = sigma_feedforward
             # self.sigma_feedback = sigma_feedback   
             
-            self.input2h = ReadinLinear(device,insize_heading,insize_targcolor,insizse_rules,hidden_size1,hidden_size2)
-            self.h2h = EIRecLinear(device,hidden_size1,hidden_size2,recurrency1=recur1,recurrency2=recur2,feedforward_stren=fforwardstren,feedback_stren=fbackstren)
+            self.input2h = ReadinLinear(device,insize_heading,insize_targcolor,insizse_rules,hidden_size1,hidden_size2,seed=self.seed)
+            self.h2h = EIRecLinear(device,hidden_size1,hidden_size2,recurrency1=recur1,recurrency2=recur2,feedforward_stren=fforwardstren,feedback_stren=fbackstren,seed=self.seed)
             
     def init_hidden(self,inputs):
         batch_size = inputs.shape[1]
@@ -240,11 +251,12 @@ class EIRNN(nn.Module):
         
         # state[:,:self.hidden_size1] += self._sigma_rec1*torch.randn_like(state[:,:self.hidden_size1])*torch.mean(state[:,:self.hidden_size1],dim=1,keepdim=True)
         # state[:,self.hidden_size1:] += self._sigma_rec2*torch.randn_like(state[:,self.hidden_size1:])*torch.mean(state[:,self.hidden_size1:],dim=1,keepdim=True)
-        # state[:,:self.hidden_size1] += self._sigma_rec1*torch.randn_like(state[:,:self.hidden_size1])
-        # state[:,self.hidden_size1:] += self._sigma_rec2*torch.randn_like(state[:,self.hidden_size1:])
+        state[:,:self.hidden_size1] += self._sigma_rec1*torch.randn_like(state[:,:self.hidden_size1])
+        state[:,self.hidden_size1:] += self._sigma_rec2*torch.randn_like(state[:,self.hidden_size1:])
         
         state[:,:self.hidden_size1] += self._sigma_rec1*torch.randn_like(state[:,:self.hidden_size1])*state[:,:self.hidden_size1]
         state[:,self.hidden_size1:] += self._sigma_rec2*torch.randn_like(state[:,self.hidden_size1:])*state[:,self.hidden_size1:]
+        # output = F.tanh(state)
         output = F.relu(state)
         return state, output															 
     
@@ -303,10 +315,12 @@ class Net(nn.Module):
         # self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         # self.device = torch.device("cpu")
         self.device = device
+        self.seed = hp["seed"]
         self.rnn = EIRNN(self.device,insize_heading,insize_targcolor,insize_rules,
                           hidden_size1, hidden_size2,n_rule,n_eachring,num_ring,recur1,recur2,fforwardstren,fbackstren,
-                         sigma_feedforward,sigma_feedback,L1_tau,L2_tau,sigma_rec1=sigma_rec1,sigma_rec2=sigma_rec2,**kwargs)            
-        self.fc = ReadoutLinear(self.device,hidden_size1,hidden_size2,output_size)
+                         sigma_feedforward,sigma_feedback,L1_tau,L2_tau,sigma_rec1=sigma_rec1,sigma_rec2=sigma_rec2,
+                         seed=self.seed,**kwargs)            
+        self.fc = ReadoutLinear(self.device,hidden_size1,hidden_size2,output_size,seed=self.seed)
         
     def forward(self, x):
         

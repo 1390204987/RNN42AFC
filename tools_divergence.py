@@ -103,6 +103,7 @@ def get_divergence(var_list, neural_activity, times_relate, rule_name, figname, 
 
 def plot_divergence(var_list, neural_activity, times_relate, rule_name, figname, iarea, **kwargs):
     plot_para = kwargs.get('para', {})
+    doplot = kwargs.get('doplot')
     dt = times_relate['dt']    
     stim_on_ = times_relate['stim_on']
     stim_on = np.unique(stim_on_) * dt
@@ -175,76 +176,85 @@ def plot_divergence(var_list, neural_activity, times_relate, rule_name, figname,
     p_val_greater = p_val / 2  # 双侧 p 值的一半
     p_val_greater = np.where(t_stat > 0, p_val_greater, 1 - p_val_greater)  # 确保 t_stat > 0 时才认为显著
     significant_time_points = t_centers[p_val_greater < 0.001]
-    # Plotting
-    # plt.figure(figsize=(10, 6))
-    # plt.errorbar(t_centers, meandivergence, yerr=sem_divergence, label='Original Mean Divergence', color=plot_para['color'])
-    # plt.errorbar(t_centers, meandivergence_shuffle_avg, yerr=sem_divergence_shuffle, label='Shuffled Mean Divergence', linestyle='--', color=plot_para['color'])
-    # 设置seaborn样式
-    sns.set(style='whitegrid')
-        
-    # 原始数据
-    # plt.errorbar(t_centers, meandivergence, yerr=sem_divergence, 
-    #              fmt='none',uplims=True, lolims=True, 
-    #              label='Original Mean Divergence', 
-    #              color=plot_para['color'],
-    #              linewidth=2)
-    # 绘制平滑曲线
-    plt.plot(t_centers, meandivergence, label='Original', 
-             linewidth=2,color=plot_para['color'])
-    # Shuffle数据
-    # plt.errorbar(t_centers, meandivergence_shuffle_avg, yerr=sem_divergence_shuffle, 
-    #              fmt='none',uplims=True, lolims=True, 
-    #              label='Shuffled Mean Divergence', 
-    #              linestyle='--', 
-    #              color=plot_para['color'],
-                 # linewidth=2)
-    # 绘制平滑曲线
-    plt.plot(t_centers, meandivergence_shuffle_avg, label='Original',
-             linestyle='--', color=plot_para['color'],linewidth=2)
-
-    # 添加填充区域（可选）
-    plt.fill_between(t_centers, 
-                     meandivergence - sem_divergence,
-                     meandivergence + sem_divergence,
-                     color=plot_para['color'], alpha=0.1)
-    
-    plt.fill_between(t_centers,
-                     meandivergence_shuffle_avg - sem_divergence_shuffle,
-                     meandivergence_shuffle_avg + sem_divergence_shuffle,
-                     color=plot_para['color'], alpha=0.1)
-    
-    # 美化图形
-    plt.grid(False)
-    plt.legend(frameon=False)
-    plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
-    plt.title('Divergence Comparison: Original vs Shuffled')
-    sns.despine()  # 移除顶部和右侧的轴线
-    plt.tight_layout()
     # Mark significant p-values
-    significant_time_points = t_centers[p_val_greater < 0.05]
-    y_loc = np.zeros(significant_time_points.size)-iarea*0.01
-    plt.scatter(significant_time_points, y_loc, color=plot_para['color'], marker='*', label='p < 0.001')
+    # significant_time_points = t_centers[p_val_greater < 0.05]
+    # 使用函数找到符合条件的连续时间段
+    continuous_segments = find_continuous_segments(significant_time_points,step_size)
+    if isinstance(continuous_segments, float) and np.isnan(continuous_segments):
+        start_time = np.nan
+    else:
+        start_time = continuous_segments[0][0]
+    if doplot:
+        # Plotting
+        # plt.figure(figsize=(10, 6))
+        # plt.errorbar(t_centers, meandivergence, yerr=sem_divergence, label='Original Mean Divergence', color=plot_para['color'])
+        # plt.errorbar(t_centers, meandivergence_shuffle_avg, yerr=sem_divergence_shuffle, label='Shuffled Mean Divergence', linestyle='--', color=plot_para['color'])
+        # 设置seaborn样式
+        sns.set(style='whitegrid')
+            
+        # 原始数据
+        # plt.errorbar(t_centers, meandivergence, yerr=sem_divergence, 
+        #              fmt='none',uplims=True, lolims=True, 
+        #              label='Original Mean Divergence', 
+        #              color=plot_para['color'],
+        #              linewidth=2)
+        # 绘制平滑曲线
+        plt.plot(t_centers, meandivergence, label='Original', 
+                 linewidth=2,color=plot_para['color'])
+        # Shuffle数据
+        # plt.errorbar(t_centers, meandivergence_shuffle_avg, yerr=sem_divergence_shuffle, 
+        #              fmt='none',uplims=True, lolims=True, 
+        #              label='Shuffled Mean Divergence', 
+        #              linestyle='--', 
+        #              color=plot_para['color'],
+                     # linewidth=2)
+        # 绘制平滑曲线
+        plt.plot(t_centers, meandivergence_shuffle_avg, label='Original',
+                 linestyle='--', color=plot_para['color'],linewidth=2)
+    
+        # 添加填充区域（可选）
+        plt.fill_between(t_centers, 
+                         meandivergence - sem_divergence,
+                         meandivergence + sem_divergence,
+                         color=plot_para['color'], alpha=0.1)
+        
+        plt.fill_between(t_centers,
+                         meandivergence_shuffle_avg - sem_divergence_shuffle,
+                         meandivergence_shuffle_avg + sem_divergence_shuffle,
+                         color=plot_para['color'], alpha=0.1)
+        
+        # 美化图形
+        plt.grid(False)
+        plt.legend(frameon=False)
+        plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+        plt.title('Divergence Comparison: Original vs Shuffled')
+        sns.despine()  # 移除顶部和右侧的轴线
+        plt.tight_layout()
 
+        y_loc = np.zeros(significant_time_points.size)-iarea*0.01
+        plt.scatter(significant_time_points, y_loc, color=plot_para['color'], marker='*', label='p < 0.001')
     
-    plt.axvline(x=0, color='k', linestyle='--', label='Stim Onset')
-    plt.axvline(x=stim_end, color='k', linestyle='--', label='Stim End')
-    plt.xlabel('Time (s)')
-    plt.ylabel('Divergence')
-    # plt.title(f'Divergence between Preferred and Non-preferred Stimuli (p-value: {p_val:.4f})')
-    plt.show()
-    
-    if 'figname_append' in kwargs:
-        pathname = './batchfigure/'+rule_name[kwargs['rule']].replace(' ','')+'/'+kwargs['figname_append']+'/'
-        figname = './batchfigure/'+rule_name[kwargs['rule']].replace(' ','')+'/'+kwargs['figname_append']+'/'+figname
-    else:     
-        pathname = './batchfigure/'+rule_name[kwargs['rule']].replace(' ','')+'/'
-        figname = './batchfigure/'+rule_name[kwargs['rule']].replace(' ','')+'/'+figname
-    
-    os.makedirs(pathname,exist_ok=True)
-    plt.savefig(figname+'.png', transparent=True) 
-
+        
+        plt.axvline(x=0, color='k', linestyle='--', label='Stim Onset')
+        plt.axvline(x=stim_end, color='k', linestyle='--', label='Stim End')
+        plt.xlabel('Time (s)')
+        plt.ylabel('Divergence')
+        # plt.title(f'Divergence between Preferred and Non-preferred Stimuli (p-value: {p_val:.4f})')
+        plt.show()
+        
+        if 'figname_append' in kwargs:
+            pathname = './batchfigure/'+rule_name[kwargs['rule']].replace(' ','')+'/'+kwargs['figname_append']+'/'
+            figname = './batchfigure/'+rule_name[kwargs['rule']].replace(' ','')+'/'+kwargs['figname_append']+'/'+figname
+        else:     
+            pathname = './batchfigure/'+rule_name[kwargs['rule']].replace(' ','')+'/'
+            figname = './batchfigure/'+rule_name[kwargs['rule']].replace(' ','')+'/'+figname
+        
+        os.makedirs(pathname,exist_ok=True)
+        plt.savefig(figname+'.png', transparent=True) 
+    return start_time
 def plot_conditioned_divergence(var_list1,var_list2,neural_activity,times_relate,rule_name,figname,iarea,**kwargs):
     plot_para = kwargs.get('para', {})
+    doplot = kwargs.get('doplot')
     dt = times_relate['dt']    
     stim_on_ = times_relate['stim_on']
     stim_on = np.unique(stim_on_) * dt
@@ -317,7 +327,7 @@ def plot_conditioned_divergence(var_list1,var_list2,neural_activity,times_relate
         # divergence[iunit, :] = np.nanmean(prefer_zactivity, axis=1) - np.nanmean(none_zactivity, axis=1)
         
         diver_neural_activity = np.full([len(t_centers), len(unique_var2), unit_num], np.nan)
-        for ivar2_idx in range(len(unique_var2)):
+        for ivar2_idx in range(len(unique_var2)):            
             ivar2 = unique_var2[ivar2_idx]
             select1 = (var_list2==ivar2)&select_prefer
             select2 = (var_list2==ivar2)&select_none
@@ -348,8 +358,9 @@ def plot_conditioned_divergence(var_list1,var_list2,neural_activity,times_relate
     # sem_divergence_shuffle = np.nanstd(divergence_shuffle, axis=0) / np.sqrt(unit_num)
     
     # Permutation testing (100 times)
-    divergence_shuffle_all = np.full([10, unit_num, len(t_centers)],np.nan)
-    for n in range(10):
+    shudivergence = np.full([unit_num,len(t_centers)], np.nan)
+    divergence_shuffle_all = np.full([20, unit_num, len(t_centers)],np.nan)
+    for n in range(20):
         var_list_shuffle = np.random.permutation(var_list1)
         for iunit in range(unit_num):
             firing_rate = np.squeeze(np.mean(smooth_neural_activity[iunit][time_begin_ind:time_end_ind, :], 0))
@@ -367,9 +378,23 @@ def plot_conditioned_divergence(var_list1,var_list2,neural_activity,times_relate
             select_none_shuffle = var_list_shuffle == none_shuffle
 
 
-            pref_z = smooth_neural_activity[iunit][:, select_prefer_shuffle]
-            none_z = smooth_neural_activity[iunit][:, select_none_shuffle]
-            divergence_shuffle_all[n, iunit, :] = np.nanmean(pref_z, axis=1) - np.nanmean(none_z, axis=1)
+            shudiver_neural_activity = np.full([len(t_centers), len(unique_var2), unit_num], np.nan)
+            for ivar2_idx in range(len(unique_var2)):            
+                ivar2 = unique_var2[ivar2_idx]
+                select1 = (var_list2==ivar2)&select_prefer_shuffle
+                select2 = (var_list2==ivar2)&select_none_shuffle
+                shuselected1_activity = smooth_neural_activity[iunit][:, select1]
+                shuselected2_activity = smooth_neural_activity[iunit][:, select2]
+                # Calculate mean and std for the selected activity
+                shumean1_activity = np.nanmean(shuselected1_activity, axis=1, keepdims=True)
+                shumean2_activity = np.nanmean(shuselected2_activity, axis=1, keepdims=True)    
+                # 计算差异
+                shudiff = np.squeeze(shumean1_activity - shumean2_activity)            
+                # 存储差异值（确保类型兼容）
+                shudiver_neural_activity[:, ivar2_idx, iunit] = shudiff
+            
+            shudivergence[iunit, :] = np.squeeze(np.nanmean(shudiver_neural_activity[:,:,iunit], axis=1))
+            divergence_shuffle_all[n, iunit, :] = shudivergence[iunit, :] 
 
     # Mean across units, then mean across permutations
     meandivergence_shuffle_100 = np.nanmean(divergence_shuffle_all, axis=0)  # shape (unit, time)
@@ -382,72 +407,78 @@ def plot_conditioned_divergence(var_list1,var_list2,neural_activity,times_relate
     p_val_greater = p_val / 2  # 双侧 p 值的一半
     p_val_greater = np.where(t_stat > 0, p_val_greater, 1 - p_val_greater)  # 确保 t_stat > 0 时才认为显著
     significant_time_points = t_centers[p_val_greater < 0.05]
+    # 使用函数找到符合条件的连续时间段
+    continuous_segments = find_continuous_segments(significant_time_points,step_size)
+    if isinstance(continuous_segments, float) and np.isnan(continuous_segments):
+        start_time = np.nan
+    else:
+        start_time = continuous_segments[0][0]
+    if doplot:    
     
-    sns.set(style='whitegrid')
+        sns.set(style='whitegrid')        
+        # 原始数据
+        # plt.errorbar(t_centers, meandivergence, yerr=sem_divergence, 
+        #              fmt='none',uplims=True, lolims=True, 
+        #              label='Original Mean Divergence', 
+        #              color=plot_para['color'],
+        #              linewidth=2)
+        # 绘制平滑曲线
+        plt.plot(t_centers, meandivergence, label='Original', 
+                 linewidth=2,color=plot_para['color'])
+        # Shuffle数据
+        # plt.errorbar(t_centers, meandivergence_shuffle_avg, yerr=sem_divergence_shuffle, 
+        #              fmt='none',uplims=True, lolims=True, 
+        #              label='Shuffled Mean Divergence', 
+        #              linestyle='--', 
+        #              color=plot_para['color'],
+                     # linewidth=2)
+        # 绘制平滑曲线
+        plt.plot(t_centers, meandivergence_shuffle_avg, label='Original',
+                 linestyle='--', color=plot_para['color'],linewidth=2)
+    
+        # 添加填充区域（可选）
+        plt.fill_between(t_centers, 
+                         meandivergence - sem_divergence,
+                         meandivergence + sem_divergence,
+                         color=plot_para['color'], alpha=0.1)
         
-    # 原始数据
-    # plt.errorbar(t_centers, meandivergence, yerr=sem_divergence, 
-    #              fmt='none',uplims=True, lolims=True, 
-    #              label='Original Mean Divergence', 
-    #              color=plot_para['color'],
-    #              linewidth=2)
-    # 绘制平滑曲线
-    plt.plot(t_centers, meandivergence, label='Original', 
-             linewidth=2,color=plot_para['color'])
-    # Shuffle数据
-    # plt.errorbar(t_centers, meandivergence_shuffle_avg, yerr=sem_divergence_shuffle, 
-    #              fmt='none',uplims=True, lolims=True, 
-    #              label='Shuffled Mean Divergence', 
-    #              linestyle='--', 
-    #              color=plot_para['color'],
-                 # linewidth=2)
-    # 绘制平滑曲线
-    plt.plot(t_centers, meandivergence_shuffle_avg, label='Original',
-             linestyle='--', color=plot_para['color'],linewidth=2)
-
-    # 添加填充区域（可选）
-    plt.fill_between(t_centers, 
-                     meandivergence - sem_divergence,
-                     meandivergence + sem_divergence,
-                     color=plot_para['color'], alpha=0.1)
+        plt.fill_between(t_centers,
+                         meandivergence_shuffle_avg - sem_divergence_shuffle,
+                         meandivergence_shuffle_avg + sem_divergence_shuffle,
+                         color=plot_para['color'], alpha=0.1)
+        
+        # 美化图形
+        plt.grid(False)
+        plt.legend(frameon=False)
+        plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+        plt.title('Divergence Comparison: Original vs Shuffled')
+        sns.despine()  # 移除顶部和右侧的轴线
+        plt.tight_layout()
+        # Mark significant p-values
+        significant_time_points = t_centers[p_val_greater < 0.05]
+        y_loc = np.zeros(significant_time_points.size)-iarea*0.01
+        plt.scatter(significant_time_points, y_loc, color=plot_para['color'], marker='*', label='p < 0.001')
     
-    plt.fill_between(t_centers,
-                     meandivergence_shuffle_avg - sem_divergence_shuffle,
-                     meandivergence_shuffle_avg + sem_divergence_shuffle,
-                     color=plot_para['color'], alpha=0.1)
-    
-    # 美化图形
-    plt.grid(False)
-    plt.legend(frameon=False)
-    plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
-    plt.title('Divergence Comparison: Original vs Shuffled')
-    sns.despine()  # 移除顶部和右侧的轴线
-    plt.tight_layout()
-    # Mark significant p-values
-    significant_time_points = t_centers[p_val_greater < 0.05]
-    y_loc = np.zeros(significant_time_points.size)-iarea*0.01
-    plt.scatter(significant_time_points, y_loc, color=plot_para['color'], marker='*', label='p < 0.001')
-
-    
-    plt.axvline(x=0, color='k', linestyle='--', label='Stim Onset')
-    plt.axvline(x=stim_end, color='k', linestyle='--', label='Stim End')
-    plt.xlabel('Time (s)')
-    plt.ylabel('Divergence')
-    # plt.title(f'Divergence between Preferred and Non-preferred Stimuli (p-value: {p_val:.4f})')
-    plt.show()
-    # plt.title(f'Divergence between Preferred and Non-preferred Stimuli (p-value: {p_val:.4f})')
-    # plt.legend()
-    # plt.show()
-    if 'figname_append' in kwargs:
-        pathname = './batchfigure/'+rule_name[kwargs['rule']].replace(' ','')+'/'+kwargs['figname_append']+'/'
-        figname = './batchfigure/'+rule_name[kwargs['rule']].replace(' ','')+'/'+kwargs['figname_append']+'/'+figname
-    else:     
-        pathname = './batchfigure/'+rule_name[kwargs['rule']].replace(' ','')+'/'
-        figname = './batchfigure/'+rule_name[kwargs['rule']].replace(' ','')+'/'+figname
-    
-    os.makedirs(pathname,exist_ok=True)
-    plt.savefig(figname+'.png', transparent=True) 
-    
+        
+        plt.axvline(x=0, color='k', linestyle='--', label='Stim Onset')
+        plt.axvline(x=stim_end, color='k', linestyle='--', label='Stim End')
+        plt.xlabel('Time (s)')
+        plt.ylabel('Divergence')
+        # plt.title(f'Divergence between Preferred and Non-preferred Stimuli (p-value: {p_val:.4f})')
+        plt.show()
+        # plt.title(f'Divergence between Preferred and Non-preferred Stimuli (p-value: {p_val:.4f})')
+        # plt.legend()
+        # plt.show()
+        if 'figname_append' in kwargs:
+            pathname = './batchfigure/'+rule_name[kwargs['rule']].replace(' ','')+'/'+kwargs['figname_append']+'/'
+            figname = './batchfigure/'+rule_name[kwargs['rule']].replace(' ','')+'/'+kwargs['figname_append']+'/'+figname
+        else:     
+            pathname = './batchfigure/'+rule_name[kwargs['rule']].replace(' ','')+'/'
+            figname = './batchfigure/'+rule_name[kwargs['rule']].replace(' ','')+'/'+figname
+        
+        os.makedirs(pathname,exist_ok=True)
+        plt.savefig(figname+'.png', transparent=True) 
+    return start_time
 # 找到连续的显著时间点区间
 def find_continuous_segments(time_points,step_size,min_length=5):
     if len(time_points) == 0:

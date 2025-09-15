@@ -60,7 +60,7 @@ def get_default_hp(ruleset):
     # n_output = n_outputdir+1
     hp = {
             # batch size for training
-            'batch_size_train': 216,
+            'batch_size_train': 256,
             # batch_size for testing
             'batch_size_test': 64,        
             'ruleset': ruleset,
@@ -74,16 +74,16 @@ def get_default_hp(ruleset):
             'n_input_rules':n_rule,
             # number of output units
             'n_output': n_output,
-            'alpha': 0.2,
+            'alpha': 0.1,
             # input noise
             'sigma_x': 0.1,
             'sigma_rec1':0.1,
-            'sigma_rec2':0.1,
+             'sigma_rec2':0.1,
             'sigma_feedforward':0.1,
             'sigma_feedback':0.1,
             # recurrent connectivity
-            'recur1':0.1,
-            'recur2':0.1,
+            'recur1':1,
+            'recur2':1,
             'fforwardstren':1,
             'fbackstren':1,                
             # 'sigma_x': 0.0001,
@@ -99,6 +99,7 @@ def get_default_hp(ruleset):
             'L1_tau':20,
             'L2_tau':200,
             'dt': 20,
+            'seed':seed,
             'rng': np.random.RandomState(seed),
             'easy_task': 1,
             # intelligent synapses parameters, tuple (c, ksi)
@@ -125,7 +126,7 @@ def get_loss(device,hp, net, trial):
     y_hat_shaped = torch.reshape(y_hat,(-1,n_output))
     mask_shaped = torch.reshape(c_mask,(-1,n_output))
 
-    loss = torch.mean(torch.sum(torch.square(y_shaped-y_hat_shaped)*mask_shaped,1)).to(device)
+    loss = torch.mean(torch.sum(torch.square(y_shaped-y_hat_shaped)*mask_shaped,1))
 
     perf = torch.mean(get_perf(y_hat,y_loc))
     
@@ -156,18 +157,28 @@ def do_eval(device,hp,net,log,rule_train,netname,savepath):
     # batch_size_test_rep = int(hp['batch_size_test']/n_rep)
     batch_size_test = hp['batch_size_test']
 
-    perf_tmp = list()                              
+    perf_tmp = []                             
     # for i_rep in range(n_rep):
     for i_rule_test in rule_train:
         trial = mytask.generate_trials(
                 i_rule_test, hp,device, 'random',stim_mod=1, batch_size=batch_size_test)
         loss_test,perf_test = get_loss(device,hp,net, trial) 
         perf_tmp.append(perf_test)
-            
-        log['perf_'+i_rule_test].append(np.mean(perf_tmp, dtype=np.float64))
+        
+        # Stack the list of tensors and compute mean
+        perf_stack = torch.stack(perf_tmp)
+        mean_perf = torch.mean(perf_stack)
+        
+        log['perf_'+i_rule_test].append(mean_perf.item())
         print('{:15s}'.format(i_rule_test) +
-             '| perf {:0.2f}'.format(np.mean(perf_tmp)))
+             '| perf {:0.2f}'.format(mean_perf.item()))
         sys.stdout.flush()
+            
+        # log['perf_'+i_rule_test].append(torch.mean(perf_tmp, dtype=np.float64))
+        # print('{:15s}'.format(i_rule_test) +
+        #      '| perf {:0.2f}'.format(torch.mean(perf_tmp)))
+        # sys.stdout.flush()
+        
         
     # if hasattr(rule_train,'__iter__'):
     #     rule_tmp = rule_train
@@ -280,10 +291,10 @@ def train(netname,
             w_current = [weight_input2hidden,weight_h2O]
             net_weight = [net.hebb.w1.detach(),net.hebb.w2.detach()]
         else:
-            weight_input2hidden = net.rnn.input2h.weight.data.to(device)  # input2hidden weight
-            weight_h2heffective = net.rnn.h2h.effective_weight().data.to(device) # h2h weight
+            weight_input2hidden = net.rnn.input2h.weight.data  # input2hidden weight
+            weight_h2heffective = net.rnn.h2h.effective_weight().data # h2h weight
             # weight_h2heffective = net.rnn.h2h.weight().data.to(device) # h2h weight
-            weight_h2O = net.fc.weight.data.to(device) #h2Output weight                    
+            weight_h2O = net.fc.weight.data#h2Output weight                    
             w_current = [weight_input2hidden,weight_h2heffective,weight_h2O]         
             net_weight = [net.rnn.input2h.weight.detach(),net.rnn.h2h.effective_weight().detach(),net.fc.weight.detach()]
             # w_current = [weight_h2heffective]         
@@ -297,9 +308,9 @@ def train(netname,
                 
         if i_rule_train == 0:
             w_anc0 = w_current
-            Omega0 = [torch.zeros(w.shape).to(device) for w in w_anc0]#ttransform weight importance to parameter
-            omega0 = [torch.zeros(w.shape).to(device) for w in w_anc0] # evaluate important weight
-            w_delta = [torch.zeros(w.shape).to(device) for w in w_anc0]
+            Omega0 = [torch.zeros(w.shape) for w in w_anc0]#ttransform weight importance to parameter
+            omega0 = [torch.zeros(w.shape) for w in w_anc0] # evaluate important weight
+            w_delta = [torch.zeros(w.shape) for w in w_anc0]
             penalty = 0
         elif c > 0: 
             w_anc0_prev = w_anc0
@@ -310,7 +321,7 @@ def train(netname,
             # normalizing o and sum o for all task
             # Penalty
             
-            Omega0 = [torch.relu(O+o/(w_d**2 + ksi)).to(device)
+            Omega0 = [torch.relu(O+o/(w_d**2 + ksi))
                       for O, o, w_d in zip(Omega0, omega0, w_delta)]
             
             #Update cost
@@ -318,7 +329,7 @@ def train(netname,
             C = torch.tensor(c,dtype=torch. float32).to(device)
             for w,O,w_cur in zip(net_weight, Omega0, w_current):
                 # penalty = torch.mean(w-w_cur)
-                  penalty = C*torch.sum(O*(torch.square(w-w_cur))).to(device)
+                  penalty = C*torch.sum(O*(torch.square(w-w_cur)))
                
         # Reset
         omega0 = [torch.zeros(w.shape) for w in w_anc0]
@@ -424,11 +435,11 @@ def train_para(device,hp,log,net,rule_train_now,netname,savepath,
                 loss = torch.mean(torch.sum(torch.square(y_shaped-y_hat_shaped)*mask_shaped,1))
             else:
                 loss = torch.mean(torch.sum(torch.square(y_shaped-y_hat_shaped)*mask_shaped,1))+penalty 
-            L1_h_norm = torch.mean(torch.abs(y_hat_shaped)).to(device)
-            L2_h_norm = torch.mean(torch.pow(y_hat_shaped,2)).to(device)
+            L1_h_norm = torch.mean(torch.abs(y_hat_shaped))
+            L2_h_norm = torch.mean(torch.pow(y_hat_shaped,2))
             for param in net.parameters():
-                L1_w_norm = torch.mean(abs(param)).to(device)
-                L2_w_norm = torch.mean(torch.pow(param,2)).to(device)
+                L1_w_norm = torch.mean(abs(param))
+                L2_w_norm = torch.mean(torch.pow(param,2))
                 
             if hp['L1_h']>0:
                 loss+=L1_h_norm
@@ -518,10 +529,11 @@ def train_para(device,hp,log,net,rule_train_now,netname,savepath,
         
     return task_trainagain
     
-netname = 'checkgpu'
+# netname = 'color2h1'
+netname = 'checkrelu'
 savepath = './checkpoint/'
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-# device = torch.device("cpu")
+# device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+device = torch.device("cpu")
 train(netname, savepath, device, ruleset = 'coltargdm')
 
 # train(netname, savepath, ruleset = '2AFC')

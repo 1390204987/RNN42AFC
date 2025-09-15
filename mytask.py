@@ -144,7 +144,7 @@ class Trial(object):
                     # GPU-optimized Gaussian window
                     t_start, t_end = ons[i], offs[i]
                     t_center = (t_start + t_end) / 2
-                    sigma = (t_end - t_start) / 10
+                    sigma = (t_end - t_start) /7
                     
                     # Generate time array directly on GPU
                     t = torch.arange(t_start, t_end, device=self.device)
@@ -186,13 +186,18 @@ class Trial(object):
         n_heading = config['n_input_heading']
         
         # Generate noise directly on GPU
-        noise_shape = (self.off - self.on, self.batch_size, n_heading - 1)
-        x_noise = torch.randn(*noise_shape, device=self.device) * self._sigma_x
-        
+        noise_shape = ((self.off - self.on)//1, self.batch_size, n_heading - 1)
+        seed=config["seed"]
+        generator = torch.Generator(device=self.device)
+        generator.manual_seed(seed)
+        x_noise = torch.abs(torch.randn(*noise_shape, device=self.device, generator=generator))* self._sigma_x
+        # 添加dropout使噪声稀疏化
+        dropout_rate = 0.9  # 调整这个值控制稀疏程度（0-1）
+        x_noise = torch.nn.functional.dropout(x_noise, p=dropout_rate)
         # Smooth noise along time dimension (axis=0)
         if x_noise.shape[0] > 1:  # Only smooth if multiple time steps
             # Method 1: Gaussian smoothing (PyTorch implementation)
-            kernel_size = 7  # Should be odd
+            kernel_size = 7# Should be odd
             sigma = 1.0
             channels = x_noise.shape[2]
             
@@ -222,6 +227,8 @@ class Trial(object):
     
         # Add noise to the appropriate slice
         self.x[self.on:self.off, :, 1:n_heading] += x_noise
+        # self.x[self.on:self.on+(self.off - self.on)//2, :, 1:n_heading] += x_noise
+        # self.x[self.on+(self.off - self.on)//2:self.off, :, 1:n_heading] += x_noise      
     def add_c_mask(self, pre_offs, post_ons):
         """Add a cost mask with GPU support.
         
@@ -593,8 +600,8 @@ def coltargdm(config, mode, stim_mod, device='cuda', **kwargs):
         stims3_coh = torch.ones(batch_size, device=device)
         
         # Timing parameters - 使用 torch 的随机函数
-        stim1_on = int(torch.randint(100, 600, (1,), device='cpu').item() / dt)  # 在CPU上生成然后转换
-        stim_dur = int(torch.tensor([400, 800, 1600], device='cpu')[torch.randint(0, 3, (1,))].item() / dt)
+        stim1_on = int(torch.randint(100, 600, (1,), device=device).item() / dt)  # 在CPU上生成然后转换
+        stim_dur = int(torch.tensor([400, 800, 1600,2000], device=device)[torch.randint(0, 4, (1,))].item() / dt)
         stim1_off = stim1_on + stim_dur
         fix_off = stim1_off + int(50/dt)
         stim2_on = stim1_on
@@ -612,7 +619,7 @@ def coltargdm(config, mode, stim_mod, device='cuda', **kwargs):
         batch_size = len(stim1_locs)
         
         stim_dur = int(p['stim_time']/dt)
-        stim1_on = int(torch.randint(100, 600, (1,), device='cpu').item() / dt)  # 在CPU上生成然后转换
+        stim1_on = int(torch.randint(100, 600, (1,), device=device).item() / dt)  # 在CPU上生成然后转换
         stim1_off = stim1_on + stim_dur
         fix_off = stim1_off + int(50/dt)
         stim2_on = stim1_on

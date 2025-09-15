@@ -15,14 +15,16 @@ recur2 = np.linspace(0.1,1,num=5)
 # feedforward_stren = np.linspace(0.1,1,num=10)
 # feedback_stren = np.linspace(0,1,num=10)
 # idnet = 5800
-for i in range(len(recur1)):
+# for i in range(len(recur1)):
+for i in [0]:
     i_recur1 = recur1[i]
-
-    for ii in range(len(recur2)):
+    # i_recur1 = 0.1
+    # for ii in range(len(recur2)):
+    for ii in [0]:
         ii_recur2 = recur2[ii]
-        # ii_recur2 = 0.5
+        # ii_recur2 = 1
 
-        for iii in [0,1,2,3]:
+        for iii in [2,3]:
             # iii_ff_stren = feedforward_stren[iii]            
             for iiii in [0,1,2,3]:
                 # iiii_fb_stren = feedback_stren[iiii]     
@@ -37,7 +39,10 @@ for i in range(len(recur1)):
                 # hp['sigma_rec2'] = noise2[ii]
                 hp["seed"] = random_num
                 formatted_idnet = str(idnet).zfill(4)
-                netname = formatted_idnet+'colorhdnet4'     
+                netname = formatted_idnet+'colorhdnet8'     
                 savepath = './checkpoint_batchnew1/'
-                train(netname,savepath,hp=hp, ruleset = 'coltargdm')
+                device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+                # device = torch.device("cpu")
+                # train(netname, savepath, device, ruleset = 'coltargdm')
+                train(netname,savepath,device,hp=hp, ruleset = 'coltargdm')
                 # idnet = idnet+1

@@ -11,7 +11,7 @@ from matplotlib.colors import Normalize
 from matplotlib.colors import TwoSlopeNorm
 from scipy.stats import pearsonr
 # 读取 Excel 数据
-df = pd.read_excel("./checkpoint_batchnew1.xlsx",engine='openpyxl')
+df = pd.read_excel("./choice_divergence1.xlsx",engine='openpyxl')
 # df = pd.read_excel("./noise_corr4.xlsx",engine='openpyxl')
 
 # 填充 'layer1cor' 列下的 NaN 值为 0
@@ -19,8 +19,9 @@ df = pd.read_excel("./checkpoint_batchnew1.xlsx",engine='openpyxl')
 # show_para = "fack_l1choicetime"
 # show_para = "fack_l2sactime"
 # show_para = "fack_l1sactime"
-# show_para = "l1_l2sac"
-show_para = "l2sac_choice"
+show_para = "delta_sac"
+# show_para = "delta_abs"
+# show_para = "deltaabs_sac"
 imagingdata = df[show_para]
 # imagingdata = df['layer2noisecorr']
 # imagingdata.fillna(0,inplace=True)
@@ -118,9 +119,32 @@ df['Z_replaced'] = df['Z'].map(replacement)
 df['J_replaced'] = df['J'].map(replacement)
 check = df['J_replaced'] / df['Z_replaced']
 df['J_over_Z'] = df['J_replaced'] / df['Z_replaced']
-corr_j,p_j = pearsonr(df[show_para], df['J_replaced'])
-corr_z,p_z = pearsonr(df[show_para], df['Z_replaced'])
-corr_joverz,p_joverz = pearsonr(df[show_para], df['J_over_Z'])
+# 创建没有 NaN 的子集
+valid_data_j = df[[show_para, 'J_replaced']].dropna()
+valid_data_z = df[[show_para, 'Z_replaced']].dropna()
+valid_data_joverz = df[[show_para, 'J_over_Z']].dropna()
+
+if len(valid_data_j) > 0:
+    corr_j, p_j = pearsonr(valid_data_j[show_para], valid_data_j['J_replaced'])
+    print(f"Pearson 相关性 (J): {corr_j:.3f}", f"P 值: {p_j:.4f}")
+else:
+    print("J 数据全为 NaN")
+
+if len(valid_data_z) > 0:
+    corr_z, p_z = pearsonr(valid_data_z[show_para], valid_data_z['Z_replaced'])
+    print(f"Pearson 相关性 (Z): {corr_z:.3f}", f"P 值: {p_z:.4f}")
+else:
+    print("Z 数据全为 NaN")
+
+if len(valid_data_joverz) > 0:
+    corr_joverz, p_joverz = pearsonr(valid_data_joverz[show_para], valid_data_joverz['J_over_Z'])
+    print(f"Pearson 相关性 (joverZ): {corr_joverz:.3f}", f"P 值: {p_joverz:.4f}")
+else:
+    print("J_over_Z 数据全为 NaN")
+# corr_j,p_j = pearsonr(df[show_para], df['J_replaced'])
+# corr_z,p_z = pearsonr(df[show_para], df['Z_replaced'])
+# corr_joverz,p_joverz = pearsonr(df[show_para], df['J_over_Z'])
+
 print(f"Pearson 相关性 (J): {corr_j:.3f}",f"P 值: {p_j:.4f}")
 print(f"Pearson 相关性 (Z): {corr_z:.3f}",f"P 值: {p_z:.4f}")
 print(f"Pearson 相关性 (joverZ): {corr_joverz:.3f}",f"P 值: {p_joverz:.4f}")

@@ -19,14 +19,15 @@ def popvec(y):
     Returns:
         Readout locations: Tensor (Batch,)
     """
+    # Calculate sums
+    y = torch.as_tensor(y, dtype=torch.float32)
     device = y.device
     n_units = y.shape[-1]
     
     # Generate preferences directly on the correct device
     pref = torch.linspace(0, 2*torch.pi, n_units+1, device=device)[:-1]
     
-    # Calculate sums
-    y = torch.as_tensor(y, dtype=torch.float32)
+
     temp_sum = y.sum(dim=-1, keepdim=True)
     
     temp_sum = torch.where(temp_sum == 0, torch.ones_like(temp_sum), temp_sum)  # Avoid division by zero
@@ -157,4 +158,4 @@ def get_perf(y_hat, y_loc):
     # Calculate performance
     perf = torch.sum((1-should_fix_float) * corr_loc_float * (1-fixating_float)) / len(corr_loc)
     
-    return perf.cpu()  # Return as CPU scalar for compatibility
+    return perf  # Return as CPU scalar for compatibility
