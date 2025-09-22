@@ -76,8 +76,8 @@ def _neuralactivity_dm(model_dir, rule, stim_mod, params_list, batch_shape,devic
     hp["sigma_x"] = 0.1
     hp['sigma_rec1']=0.1
     hp['sigma_rec2']=0.1
-    # hp['fforwardstren']=0.1
-    hp['fbackstren']=1
+    hp['fforwardstren']=1
+    hp['fbackstren']=0
     # hp['sigma_x'] = 0.1,
     net = Net(hp,device,dt = hp['dt']).to(device)
     #remove prefixe "module"
@@ -292,7 +292,7 @@ def neuralactivity_color_dm(model_dir,device,**kwargs):
         unique_n_stim = len(stim1_loc)
         condition_list = {'stim_coh':stim1_coh,'stim_loc':stim1_loc}
     elif stim_mod ==2:
-        unique_stim1_coh = np.array([1,0.5,0.2,0.1,0])
+        unique_stim1_coh = np.array([1,0.5,0.1,0.05,0])
         unique_stim1_coh  = unique_stim1_coh*1
         unique_stim1_loc = np.array([-12,12])*6/360*np.pi+np.pi
         relative_stim1_loc = np.outer(unique_stim1_coh, np.sign(unique_stim1_loc - np.pi)).flatten()+np.pi
@@ -319,7 +319,7 @@ def neuralactivity_color_dm(model_dir,device,**kwargs):
     stim3_locs = (stim2_locs+np.pi)%(2*np.pi)
     
     params_list = list()
-    stim1_times = [2000]
+    stim1_times = [1000]
     
     for stim1_time in stim1_times:
         params = {'stim1_locs': stim1_locs,
@@ -557,11 +557,12 @@ def neuralactivity_color_dm(model_dir,device,**kwargs):
     plt.savefig("./lunwenfigure/h2population_choice.svg")
     
     
-    h1abs_para = {'color': [x/255 for x in [139,10,80]]}
-    h1sac_para = {'color': [x/255 for x in [0,0,139]]}
+
+    h1abs_para = {'color': [x/255 + y*0.75*(1-1*2/4) for x, y in zip([139,10,80], [1,1,1])]}
+    h1sac_para = {'color': [x/255 + y*0.75*(1-1*2/4) for x, y in zip([0,0,139], [1,1,1])]}
     if not hp.get("hidden_size2") is None:
-        h2abs_para = {'color': [x/255 + y*0.75*(1-1*2/4) for x, y in zip([139,10,80], [1,1,1])]}
-        h2sac_para = {'color': [x/255 + y*0.75*(1-1*2/4) for x, y in zip([0,0,139], [1,1,1])]}
+        h2abs_para = {'color': [x/255 for x in [139,10,80]]}
+        h2sac_para = {'color': [x/255 for x in [0,0,139]]}
     # plt.figure(11,figsize=(10, 16))# plot saccade divergence
     plt.figure(figsize=(10, 6))  # 宽度为10，高度为5
     figname = 'saccade_div'
@@ -653,7 +654,7 @@ for i in [0]:
     figname_suffix = f'checkgpu/{i}'
     # model_dir = './checkpoint/checkrelu.t7'        
     # model_dir = './checkpoint/onlyfeedforward.t7'      
-    model_dir = './checkpoint_batchnew1/0003colorhdnet8.t7'         
+    model_dir = './checkpoint_batchnew1/4432colorhdnet8.t7'         
     # model_dir = 'I:/model/data_simulation/neuralactivityinputtask/checkpoint_batchnew1/0421colorhdnet4.t7'
     neuralactivity_color_dm(model_dir,device,figname_append=figname_suffix) 
     # psychometric_color_dm(model_dir,figname_append=figname_suffix)

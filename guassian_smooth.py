@@ -10,7 +10,7 @@ def guass_smooth(align_markers,spike_aligned):
     # Parameters
     bin_size_rate = 40  # in ms
     step_size_rate = 40  # in ms
-    smooth_factor = 60  # in ms (sigma for Gaussian filter)
+    smooth_factor = 80   # in ms (sigma for Gaussian filter)
     p_critical = 0.01
     spike_time_win = 20 # in ms
 
@@ -18,7 +18,7 @@ def guass_smooth(align_markers,spike_aligned):
     
     # Calculate time centers for bins
     start_time = align_markers[0] + bin_size_rate / 2
-    end_time = align_markers[1] - bin_size_rate / 2
+    end_time = align_markers[1] - bin_size_rate / 24
     t_centers = np.arange(start_time, end_time + step_size_rate, step_size_rate)
 
     

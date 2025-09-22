@@ -297,5 +297,5 @@ for net in nets:
     })
     
     df = pd.concat([df, new_row], ignore_index=True)
-df.to_excel("./choice_divergence1.xlsx",index=False)
+df.to_excel("./choice_divergence1_unsmooth.xlsx",index=False)
     

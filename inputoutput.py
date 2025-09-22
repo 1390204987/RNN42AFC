@@ -167,7 +167,7 @@ def neuralactivity_color_dm(model_dir,device='cpu',**kwargs):
     plt.figure()
     plt.imshow(x[:,selected_index,: n_input_heading].T,cmap=cmap)
     plt.xticks(ticks=[stim1_ons,stim1_end], labels=['stim1 on','stim1 end']) 
-    plt.savefig("./lunwenfigure/headinginput.svg")
+
     # Remove top and right spines
     ax = plt.gca()
     ax.spines['top'].set_visible(False)
@@ -175,11 +175,21 @@ def neuralactivity_color_dm(model_dir,device='cpu',**kwargs):
     # Optional: Keep bottom and left spines but make them thinner
     ax.spines['bottom'].set_linewidth(0.5)
     ax.spines['left'].set_linewidth(0.5)
+    ax.grid(False)
+    # 详细设置刻度线
+    ax.tick_params(axis='both', which='both', 
+                   bottom=True, top=False, 
+                   left=True, right=False,
+                   direction='out',         # 刻度线朝外
+                   length=3,               # 刻度线长度
+                   width=0.5)              # 刻度线宽度
+
+    plt.savefig("./lunwenfigure/headinginput.svg")
     
     plt.figure()
     plt.imshow(x[:,selected_index,n_input_heading:n_input_heading+n_input_targcolor].T,cmap=cmap)
     plt.xticks(ticks=[stim1_ons,stim1_end], labels=['stim1 on','stim1 end']) 
-    plt.savefig("./lunwenfigure/colorinput.svg")
+
     # Remove top and right spines
     ax = plt.gca()
     ax.spines['top'].set_visible(False)
@@ -187,11 +197,20 @@ def neuralactivity_color_dm(model_dir,device='cpu',**kwargs):
     # Optional: Keep bottom and left spines but make them thinner
     ax.spines['bottom'].set_linewidth(0.5)
     ax.spines['left'].set_linewidth(0.5)
+    ax.grid(False)
+    # 详细设置刻度线
+    ax.tick_params(axis='both', which='both', 
+                   bottom=True, top=False, 
+                   left=True, right=False,
+                   direction='out',         # 刻度线朝外
+                   length=3,               # 刻度线长度
+                   width=0.5)              # 刻度线宽度
+    plt.savefig("./lunwenfigure/colorinput.svg")
     
     plt.figure()
     plt.imshow(x[:,selected_index,n_input_heading+n_input_targcolor:].T,cmap=cmap)
     plt.xticks(ticks=[stim1_ons,stim1_end], labels=['stim1 on','stim1 end']) 
-    plt.savefig("./lunwenfigure/ruleinput.svg")
+
     # Remove top and right spines
     ax = plt.gca()
     ax.spines['top'].set_visible(False)
@@ -199,11 +218,20 @@ def neuralactivity_color_dm(model_dir,device='cpu',**kwargs):
     # Optional: Keep bottom and left spines but make them thinner
     ax.spines['bottom'].set_linewidth(0.5)
     ax.spines['left'].set_linewidth(0.5)
+    ax.grid(False)
+    # 详细设置刻度线
+    ax.tick_params(axis='both', which='both', 
+                   bottom=True, top=False, 
+                   left=True, right=False,
+                   direction='out',         # 刻度线朝外
+                   length=3,               # 刻度线长度
+                   width=0.5)              # 刻度线宽度
+    plt.savefig("./lunwenfigure/ruleinput.svg")
     
     plt.figure()
     plt.imshow(y[:,selected_index,:].T,cmap=cmap)
     plt.xticks(ticks=[stim1_ons,stim1_end], labels=['stim1 on','stim1 end']) 
-    plt.savefig("./lunwenfigure/expectoutput.svg")
+
     # Remove top and right spines
     ax = plt.gca()
     ax.spines['top'].set_visible(False)
@@ -211,11 +239,20 @@ def neuralactivity_color_dm(model_dir,device='cpu',**kwargs):
     # Optional: Keep bottom and left spines but make them thinner
     ax.spines['bottom'].set_linewidth(0.5)
     ax.spines['left'].set_linewidth(0.5)
+    ax.grid(False)
+    # 详细设置刻度线
+    ax.tick_params(axis='both', which='both', 
+                   bottom=True, top=False, 
+                   left=True, right=False,
+                   direction='out',         # 刻度线朝外
+                   length=3,               # 刻度线长度
+                   width=0.5)              # 刻度线宽度
+    plt.savefig("./lunwenfigure/expectoutput.svg")
     
     plt.figure()
     plt.imshow(y_hat[:,selected_index,:].T,cmap=cmap)
     plt.xticks(ticks=[stim1_ons,stim1_end], labels=['stim1 on','stim1 end']) 
-    plt.savefig("./lunwenfigure/realoutput.svg")
+
     # Remove top and right spines
     ax = plt.gca()
     ax.spines['top'].set_visible(False)
@@ -223,9 +260,19 @@ def neuralactivity_color_dm(model_dir,device='cpu',**kwargs):
     # Optional: Keep bottom and left spines but make them thinner
     ax.spines['bottom'].set_linewidth(0.5)
     ax.spines['left'].set_linewidth(0.5)
+    ax.grid(False)
+    # 详细设置刻度线
+    ax.tick_params(axis='both', which='both', 
+                   bottom=True, top=False, 
+                   left=True, right=False,
+                   direction='out',         # 刻度线朝外
+                   length=3,               # 刻度线长度
+                   width=0.5)              # 刻度线宽度
+    plt.savefig("./lunwenfigure/realoutput.svg")
 for i in [0]:
     figname_suffix = f'checkgpu/{i}'
-    model_dir = './checkpoint/checkrelu.t7'         
+    # model_dir = './checkpoint/checkrelu.t7'         
+    model_dir = './checkpoint_batchnew1/4432colorhdnet8.t7'         
     # device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     device = "cpu"
     neuralactivity_color_dm(model_dir,device=device,figname_append=figname_suffix) 

@@ -277,7 +277,13 @@ def plot_conditioned_divergence(var_list1,var_list2,neural_activity,times_relate
     for iunit in range(unit_num):
 
         align_markers = [trial_start, trial_end]
-        t_centers,step_size,neural_act_smooth = guass_smooth(align_markers, neural_activity[:, :, iunit])
+        
+        step_size = 20
+        t_centers = np.arange(trial_start, trial_end+step_size,step_size)
+        neural_act_smooth = neural_activity[:, :, iunit]
+        
+        # t_centers,step_size,neural_act_smooth = guass_smooth(align_markers, neural_activity[:, :, iunit])
+        
         base = np.mean(neural_act_smooth, axis=1, keepdims=True)
         gain = np.std(neural_act_smooth, keepdims=True) + 1e-6
         smooth_neural_activity.append((neural_act_smooth - base) / gain)
@@ -406,7 +412,7 @@ def plot_conditioned_divergence(var_list1,var_list2,neural_activity,times_relate
     # 手动转换为单侧 p 值（greater）
     p_val_greater = p_val / 2  # 双侧 p 值的一半
     p_val_greater = np.where(t_stat > 0, p_val_greater, 1 - p_val_greater)  # 确保 t_stat > 0 时才认为显著
-    significant_time_points = t_centers[p_val_greater < 0.05]
+    significant_time_points = t_centers[p_val_greater < 0.001]
     # 使用函数找到符合条件的连续时间段
     continuous_segments = find_continuous_segments(significant_time_points,step_size)
     if isinstance(continuous_segments, float) and np.isnan(continuous_segments):
@@ -455,7 +461,7 @@ def plot_conditioned_divergence(var_list1,var_list2,neural_activity,times_relate
         sns.despine()  # 移除顶部和右侧的轴线
         plt.tight_layout()
         # Mark significant p-values
-        significant_time_points = t_centers[p_val_greater < 0.05]
+        # significant_time_points = t_centers[p_val_greater < 0.001]
         y_loc = np.zeros(significant_time_points.size)-iarea*0.01
         plt.scatter(significant_time_points, y_loc, color=plot_para['color'], marker='*', label='p < 0.001')
     
@@ -492,7 +498,7 @@ def find_continuous_segments(time_points,step_size,min_length=5):
     
     # 找到不连续的点（假设采样间隔相同，差异大于一个间隔的点就是不连续点）
     # 这里假设时间点是等间隔采样的，如果不等间隔需要调整阈值
-    break_points = np.where(diffs > 1.5 * step_size)[0] + 1
+    break_points = np.where(diffs > 4.5 * step_size)[0] + 1
     
     # 分割成连续段
     segments = np.split(sorted_times, break_points)

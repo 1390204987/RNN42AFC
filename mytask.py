@@ -4,7 +4,7 @@ Created on Sun Oct 31 11:48:33 2021
 
 the definition of task variable sign
 heading: range from 0~2pi, heading angle > pi belong to Categary1(C1),
-heading angle < pi belong to Categary 2(C2)
+heading angle < pi belong to Categary2(C2)
 Target loc:  T1 is the target of choose C1, T2 is the target of choose C2,
 in HD task, T1 always locate in 0 direction (right side of the screen)
 in colortarget HD task T1 loc if assigned by stim2 loc 
@@ -190,10 +190,10 @@ class Trial(object):
         seed=config["seed"]
         generator = torch.Generator(device=self.device)
         generator.manual_seed(seed)
-        x_noise = torch.abs(torch.randn(*noise_shape, device=self.device, generator=generator))* self._sigma_x
+        x_noise = torch.randn(*noise_shape, device=self.device, generator=generator)* self._sigma_x
         # 添加dropout使噪声稀疏化
-        dropout_rate = 0.9  # 调整这个值控制稀疏程度（0-1）
-        x_noise = torch.nn.functional.dropout(x_noise, p=dropout_rate)
+        dropout_rate = 0  # 调整这个值控制稀疏程度（0-1）
+        # x_noise = torch.nn.functional.dropout(x_noise, p=dropout_rate)
         # Smooth noise along time dimension (axis=0)
         if x_noise.shape[0] > 1:  # Only smooth if multiple time steps
             # Method 1: Gaussian smoothing (PyTorch implementation)
@@ -601,7 +601,7 @@ def coltargdm(config, mode, stim_mod, device='cuda', **kwargs):
         
         # Timing parameters - 使用 torch 的随机函数
         stim1_on = int(torch.randint(100, 600, (1,), device=device).item() / dt)  # 在CPU上生成然后转换
-        stim_dur = int(torch.tensor([400, 800, 1600,2000], device=device)[torch.randint(0, 4, (1,))].item() / dt)
+        stim_dur = int(torch.tensor([400, 800, 1600], device=device)[torch.randint(0, 4, (1,))].item() / dt)
         stim1_off = stim1_on + stim_dur
         fix_off = stim1_off + int(50/dt)
         stim2_on = stim1_on
@@ -646,7 +646,7 @@ def coltargdm(config, mode, stim_mod, device='cuda', **kwargs):
     trial.add('stim', stim2_locs, ons=stim2_on, offs=stim2_off, mods=2)
     trial.add('stim', stim3_locs, ons=stim3_on, offs=stim3_off, mods=3)
     
-    # Determine target locations
+    # Determine target locations, true S3, false S2
     stim_locs = torch.where(stim1_cats, stim3_locs, stim2_locs)
     
     trial.add('fix_out', offs=fix_off)
