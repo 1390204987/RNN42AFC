@@ -16,15 +16,15 @@ recur2 = np.linspace(0.1,1,num=5)
 # feedback_stren = np.linspace(0,1,num=10)
 # idnet = 5800
 # for i in range(len(recur1)):
-for i in [1]:
+for i in [4]:
     i_recur1 = recur1[i]
     # i_recur1 = 0.1
     # for ii in range(len(recur2)):
-    for ii in [1]:
+    for ii in [4]:
         ii_recur2 = recur2[ii]
         # ii_recur2 = 1
 
-        for iii in [2,3]:
+        for iii in [0,1,2,3]:
             # iii_ff_stren = feedforward_stren[iii]            
             for iiii in [0,1,2,3]:
                 # iiii_fb_stren = feedback_stren[iiii]     

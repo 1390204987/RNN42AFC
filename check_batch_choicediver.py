@@ -275,7 +275,7 @@ def list_files_in_directory(directory):
     files = [file for file in os.listdir(directory) if os.path.isfile(os.path.join(directory, file))]        
     return files
                       
-filespath = './checkpoint_batchnew1'
+filespath = './checkpoint_batchnew3'
 # filespath = './check'
 nets = list_files_in_directory(filespath)
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -297,5 +297,5 @@ for net in nets:
     })
     
     df = pd.concat([df, new_row], ignore_index=True)
-df.to_excel("./choice_divergence1_unsmooth.xlsx",index=False)
+df.to_excel("./choice_divergence3_unsmooth.xlsx",index=False)
     
