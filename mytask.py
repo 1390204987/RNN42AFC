@@ -601,7 +601,7 @@ def coltargdm(config, mode, stim_mod, device='cuda', **kwargs):
         
         # Timing parameters - 使用 torch 的随机函数
         stim1_on = int(torch.randint(100, 600, (1,), device=device).item() / dt)  # 在CPU上生成然后转换
-        stim_dur = int(torch.tensor([400, 800, 1600], device=device)[torch.randint(0, 4, (1,))].item() / dt)
+        stim_dur = int(torch.tensor([400, 800, 1600], device=device)[torch.randint(0, 3, (1,))].item() / dt)
         stim1_off = stim1_on + stim_dur
         fix_off = stim1_off + int(50/dt)
         stim2_on = stim1_on

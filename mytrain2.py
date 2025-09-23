@@ -529,12 +529,12 @@ def train_para(device,hp,log,net,rule_train_now,netname,savepath,
         
     return task_trainagain
     
-# netname = 'color2h1'
-netname = 'checkrelu'
-savepath = './checkpoint/'
-# device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-device = torch.device("cpu")
-train(netname, savepath, device, ruleset = 'coltargdm')
+# # netname = 'color2h1'
+# netname = 'checkrelu'
+# savepath = './checkpoint/'
+# # device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+# device = torch.device("cpu")
+# train(netname, savepath, device, ruleset = 'coltargdm')
 
 # train(netname, savepath, ruleset = '2AFC')
 # basednet = './checkpoint/coltargdm802hiddennet2keep.t7'
