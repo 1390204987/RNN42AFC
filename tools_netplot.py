@@ -137,3 +137,68 @@ def plot_forward_connectivity(effective_weight,hidden1_size,heading_selectivity,
     else:  
         figname = './batchfigure/'+rule_name[kwargs['rule']].replace(' ','')+'/1hiddenHD_H12H2'
     plt.savefig(figname+'.png', transparent=True)
+    
+def plot_feedback_connectivity(effective_weight,hidden1_size,heading_selectivity,choice_selectivity,rule_name,**kwargs):
+    
+    Wh2h = effective_weight['H2H_weight']
+    Wh2h = Wh2h.detach().cpu().numpy()
+
+    Wh22h1 = Wh2h[:hidden1_size,hidden1_size:]
+    Wlim = np.max(np.abs(Wh22h1))
+    
+    if len(heading_selectivity) == 0:
+        sort_ind_heading = np.arange(0,Wh22h1.shape[1],1,dtype=int)
+        # 如果没有heading selectivity数据，不绘制分界线
+        plot_heading_divider = False
+    else:
+        sort_ind_heading = np.argsort(heading_selectivity[:,0])
+        sorted_heading = heading_selectivity[sort_ind_heading, 0]
+        positive_indices = np.where(sorted_heading > 0)[0]
+        first_positive = positive_indices[0]
+        heading_sign_changes = [first_positive]
+        plot_heading_divider = len(heading_sign_changes) > 0
+    if len(choice_selectivity) == 0:
+        sort_ind_choice = np.arange(0,Wh22h1.shape[0])
+        plot_choice_divider = False
+    else:
+        sort_ind_choice = np.argsort(choice_selectivity[:,0])
+        sorted_choice = choice_selectivity[sort_ind_choice, 0]
+        positive_indices = np.where(sorted_choice > 0)[0]
+        first_positive = positive_indices[0]
+        choice_sign_changes = [first_positive]
+        plot_choice_divider = len(choice_sign_changes) > 0
+    Wh22h1 = Wh22h1[:,sort_ind_choice]
+    show_Wh22h1 = Wh22h1[sort_ind_heading,:]
+    plt.figure()
+    # plt.imshow(Wh2h, cmap = 'bwr_r',vmin=-Wlim, vmax=Wlim)
+    plt.imshow(show_Wh22h1, cmap = 'bwr_r',vmin=-Wlim, vmax=Wlim,origin='lower')
+    
+    # 标记heading selectivity符号变化的分界线
+    if plot_heading_divider:
+        for change_pos in heading_sign_changes:
+            plt.axhline(y=change_pos - 0.5, color='black', linewidth=2, linestyle='--', alpha=0.8)
+            # 添加文本标签说明分界线含义
+            plt.text(show_Wh22h1.shape[1] * 1.02, change_pos - 0.5, 'Heading\nZero', 
+                    verticalalignment='center', fontsize=8, color='black')
+    
+    # 标记choice selectivity符号变化的分界线
+    if plot_choice_divider:
+        for change_pos in choice_sign_changes:
+            plt.axvline(x=change_pos - 0.5, color='black', linewidth=2, linestyle='--', alpha=0.8)
+            # 添加文本标签说明分界线含义
+            plt.text(change_pos - 0.5, show_Wh22h1.shape[0] * 1.02, 'choice\nZero', 
+                    horizontalalignment='center', verticalalignment='bottom', fontsize=8, color='black')
+    
+    plt.grid(False)
+    plt.colorbar()
+    plt.xlabel('from hidden(sort by choice)')
+    plt.ylabel('to hidden(sort by heading)')
+    plt.title('forward connectivity')
+    if 'figname_append' in kwargs:
+        figname = './batchfigure/'+rule_name[kwargs['rule']].replace(' ','')+'/'+kwargs['figname_append']+'/H22H1'
+    else:  
+        figname = './batchfigure/'+rule_name[kwargs['rule']].replace(' ','')+'/HD_H22H1'
+    plt.savefig(figname+'.png', transparent=True)    
+    
+    
+    

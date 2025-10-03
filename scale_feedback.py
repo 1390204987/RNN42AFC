@@ -1,0 +1,413 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Thu Oct  2 19:40:07 2025
+rescale feedback connection
+@author: NaN
+"""
+
+
+import torch
+import numpy as np
+import os
+
+import numpy as np
+import matplotlib.pyplot as plt
+from SetFigure import SetFigure
+import torch
+import torch.nn as nn
+import torch.optim as optim
+
+import scipy.stats as stats
+from scipy.optimize import curve_fit
+
+import mytask
+from mytask import generate_trials, rule_name, get_dist
+
+# import mynetworkhebb
+# from mynetworkhebb import Net
+          
+# import mynetwork_new3
+# from mynetwork_new3 import Net
+import mynetwork8
+from mynetwork8 import Net
+
+# import mynetwork1hidden
+# from mynetwork1hidden import Net
+
+# import mynetwork
+# from mynetwork import Net`
+
+from mytools import popvec,get_y_direction
+
+
+from scipy.stats import pearsonr
+
+from tools_selectivity import _selectivity, _z_selectivity,plot_selectivity_corr
+
+THETA = 0.3 * np.pi
+
+# From sns.dark_palette("light blue", 3, input="xkcd")
+BLUES = [np.array([0.13333333, 0.13333333, 0.13333333, 1.        ]),
+         np.array([0.3597078 , 0.47584775, 0.56246059, 1.        ]),
+         np.array([0.58431373, 0.81568627, 0.98823529, 1.        ])]
+
+
+################ Psychometric - Varying Coherence #############################
+def _neuralactivity_dm(model_dir, rule, stim_mod, params_list, batch_shape,device):
+    """Base function for computing psychometric performance in 2AFC tasks
+
+    Args:
+        model_dir : model name
+        rule : task to analyze
+        params_list : a list of parameter dictionaries used for the psychometric mode
+        batch_shape : shape of each batch. Each batch should have shape (n_rep, ...)
+        n_rep is the number of repetitions that will be averaged over
+
+    Return:
+        ydatas: list of performances
+    """
+    print('Starting neural activity analysis of the {:s} task...'.format(rule_name[rule]))
+    
+    modelparams = torch.load(model_dir,weights_only=False)
+    state_dict = modelparams["state_dict"]
+    hp = modelparams["hp"]
+    hp["sigma_x"] = 0.1
+    hp['sigma_rec1']=0.1
+    hp['sigma_rec2']=0.1
+    hp['fforwardstren']=1
+    hp['fbackstren']=0
+    # hp['sigma_x'] = 0.1,
+    net = Net(hp,device,dt = hp['dt']).to(device)
+    #remove prefixe "module"
+    state_dict = {k.replace("module.",""): v for k, v in state_dict.items()}
+    msg = net.load_state_dict(state_dict, strict=False)
+    print("Load pretrained model with msg: {}".format(msg))
+ 
+    ydatas = list()
+    for params in params_list:
+        test_trial = generate_trials(rule,hp,device,'psychometric',stim_mod, params = params)
+        x,y,y_loc,c_mask = test_trial.x,test_trial.y,test_trial.y_loc,test_trial.c_mask
+        # x = torch.from_numpy(x).type(torch.float)
+        # y = torch.from_numpy(y).type(torch.float)    
+        # c_mask = torch.from_numpy(c_mask).type(torch.float)
+        inputs = x
+        y_hat,activity = net(inputs)    
+        
+        if hasattr(net,'hebb'):
+            I2H_weight = net.hebb.w1 
+            H2O_weight = net.hebb.w2
+            effective_weight = \
+                {'I2H_weight':I2H_weight,
+                 'H2O_weight':H2O_weight}
+        else:            
+            H2O_weight = net.fc.effective_weight()
+            # H2O_weight = net.fc.weight
+            H2H_weight = net.rnn.h2h.effective_weight()
+            I2H_weight = net.rnn.input2h.effective_weight()
+            # I2H_weight = net.rnn.input2h.weight
+            effective_weight = \
+                {'I2H_weight':I2H_weight,
+                 'H2H_weight':H2H_weight,
+                 'H2O_weight':H2O_weight}
+            
+        
+    # e_size = net.rnn.e_size
+    # return activity, test_trial, state_dict ,y_hat,y_loc,e_size,
+    return activity, test_trial, state_dict, y_hat,y_loc,effective_weight,hp,net
+def neuralactivity_color_dm(model_dir,device,**kwargs):
+    rule = 'coltargdm'
+    stim_mod = 2# 1 is fine task 2 is coarse task
+    if stim_mod == 1:
+        stim1_coh = np.ones(9)*1.5
+        stim1_loc = np.array([-12,-6,-1,-0.5,0,0.5,1,6,12])*6/360*np.pi+np.pi
+        # stim1_loc = np.array([-25,-24,-23,23,24,25])*6/360*np.pi+np.pi
+        n_rep = 50
+        unique_n_stim = len(stim1_loc)
+        condition_list = {'stim_coh':stim1_coh,'stim_loc':stim1_loc}
+    elif stim_mod ==2:
+        unique_stim1_coh = np.array([1,0.5,0.1,0.05,0])
+        unique_stim1_coh  = unique_stim1_coh*1
+        unique_stim1_loc = np.array([-12,12])*6/360*np.pi+np.pi
+        relative_stim1_loc = np.outer(unique_stim1_coh, np.sign(unique_stim1_loc - np.pi)).flatten()+np.pi
+        stim1_coh = np.repeat(unique_stim1_coh, 2)
+        stim1_loc = np.tile(unique_stim1_loc, 5) 
+        relative_stim1_loc = stim1_coh*np.sign(stim1_loc-np.pi)+np.pi
+        n_rep = 50
+        unique_n_stim = len(unique_stim1_coh)*len(unique_stim1_loc)
+        condition_list = {'stim_coh':unique_stim1_coh,'stim_loc':unique_stim1_loc}
+    batch_size = n_rep*unique_n_stim
+    batch_shape = (n_rep,unique_n_stim)
+
+    ind_stim_loc,ind_stim = np.unravel_index(range(batch_size),batch_shape)
+    
+    stim1_locs = stim1_loc[ind_stim]
+    stim1_strengths = stim1_coh[ind_stim]
+    seed = 21
+    rng = np.random.RandomState(seed)
+
+    # stim2_locs = rng.choice([np.pi,0],(batch_size,))
+    half_size = batch_size // 2
+    stim2_locs = np.concatenate([np.zeros(half_size), np.ones(half_size) * np.pi])
+    rng.shuffle(stim2_locs)
+    stim3_locs = (stim2_locs+np.pi)%(2*np.pi)
+    
+    params_list = list()
+    stim1_times = [1000]
+    
+    for stim1_time in stim1_times:
+        params = {'stim1_locs': stim1_locs,
+                  'stim1_strengths': stim1_strengths,
+                  'stim_time': stim1_time,
+                  'stim2_locs': stim2_locs,
+                  'stim3_locs': stim3_locs}
+        
+        params_list.append(params)
+        
+    if stim_mod == 1:
+        xdatas = [stim1_loc]
+    elif stim_mod == 2:
+        xdatas = [relative_stim1_loc]
+    neural_activity,test_trial,state_dict,y_hat,y_loc,effective_weight,hp,net = _neuralactivity_dm(model_dir, rule,stim_mod, params_list, batch_shape,device)    
+    # neural_activity,test_trial,state_dict,y_hat,y_loc,e_size = _neuralactivity_dm(model_dir, rule,stim_mod, params_list, batch_shape)
+    neural_activity = neural_activity.detach().cpu().numpy()
+    stim1_on = test_trial.on
+    dt = test_trial.dt
+    times_relate = {'stim_ons':stim1_on,'dt':dt,'stim_dur':stim1_times}  
+    
+    X = test_trial.x
+    y_dir = get_y_direction(y_hat,y_loc) 
+    # only analysis trials with the output direction belongs to the given target 
+    y_dir = y_dir.detach().cpu().numpy()
+    complete_trial_ind = np.where(np.isnan(y_dir)==False)
+    y_hat = y_hat.detach().cpu().numpy()
+    y_loc = y_loc.detach().cpu().numpy()
+    y_hat_end = y_hat[-1]
+    y_loc_end = y_loc[-1]
+    correct_rate = np.sum((y_loc_end-y_dir)==0)/len(y_dir)
+    y_hat_loc = popvec(y_hat_end[..., 1:])
+    y_hat_re = np.reshape(y_hat_loc,batch_shape)
+    T1_loc = np.reshape(params['stim2_locs'],batch_shape)
+    T2_loc = np.reshape(params['stim3_locs'],batch_shape)    
+    choose_T1 = (get_dist(y_hat_re-T1_loc)<THETA).sum(axis=0)
+    choose_T2 = (get_dist(y_hat_re-T2_loc)<THETA).sum(axis=0)   
+    ydatas = list()
+    ydatas.append(choose_T1/(choose_T1+choose_T2))
+
+    #plot psychometric according to saccade direction
+    y_dir_reshape = np.reshape(y_dir,batch_shape)
+    sac_left = (y_dir_reshape == 0).sum(axis=0)
+    sac_right = (np.float32(y_dir_reshape) == np.pi).sum(axis=0)
+    sac_ydatas = list()
+    sac_ydatas.append(sac_left/(sac_left+sac_right))
+
+    #plot psychometric according to saccaade direction respect T1 loc
+    # plot_psychometric_choice(T1_loc,sac_ydatas,
+    #                          labels=[str(t) for t in stim1_times],
+    #                          colors=BLUES,
+    #                          legtitle='Stim. time(ms)', rule=rule,**kwargs)
+    
+    # get heading per trial
+    if len(np.unique(stim1_coh))==1:
+        unique_heading = np.unique(stim1_loc)
+    else:
+        unique_heading = relative_stim1_loc
+ 
+    in_stim = ind_stim[complete_trial_ind]
+    heading_per_trial = np.full_like(in_stim,np.nan,dtype=np.float32)
+    for i_heading in range(len(unique_heading)): 
+        heading_per_trial[np.where(in_stim==i_heading)] = unique_heading[i_heading]
+    
+    # get T1 loc per trial(color per trial)
+    T1_locs = stim2_locs
+    T2_locs = stim3_locs
+    T1_locs = T1_locs[complete_trial_ind]
+    T2_locs = T2_locs[complete_trial_ind]
+    # in lab experiment, define red color on RF(left screen) as 1
+    # T1loc_per_trial = -T1_locs# -pi,0 two fixed spacial loc
+    T1loc_per_trial = T1_locs# red target(T1) on left marker as 1 
+    # get choice per trial
+    # choose T1 mark as 1 choose T2 mark as 0,other direction mark as nan
+
+    y_hat_loc = y_hat_loc[complete_trial_ind]
+    choice_per_trial = np.full_like(y_hat_loc,np.nan) 
+    choice_per_trial[get_dist(y_hat_loc-T1_locs)<THETA] = 1   
+    choice_per_trial[get_dist(y_hat_loc-T2_locs)<THETA] = 0
+    
+    # get sac direction per trial
+    sac_per_trial = y_dir[complete_trial_ind] 
+
+    
+    neural_activity = np.squeeze(neural_activity[:,complete_trial_ind,:]) 
+    if hp.get("hidden_size1") is None:
+        hidden1_size = hp['hidden_size']
+    else: 
+        hidden1_size = hp['hidden_size1']
+    hidden1_activity = neural_activity[:,:,:hidden1_size]
+    if not hp.get("hidden_size2") is None:
+        hidden2_size = hp['hidden_size2']        
+        hidden2_activity = neural_activity[:,:,hidden1_size:]
+        
+    # only use 0heading stimulus condition
+    target_headings = np.array([-0.5, 0, 0.5]) * (6/360) * np.pi + np.pi  # 转换为弧度
+    select_0heading = np.any(np.isclose(heading_per_trial, target_headings[:, None]), axis=0)
+    # select_0heading = heading_per_trial==np.array([-0.5,0,0.5])*6/360*np.pi+np.pi
+    select_T10 = T1loc_per_trial==0
+    select_sac0 = sac_per_trial==0
+    # plot_alltrial_activity(neural_activity,rule=rule)
+    # plot_condtitioned_psth(neural_activity,ind_stim,condition_list,times_relate,rule=rule)
+    # plot_saccade_divergence(neural_activity,ind_stim,condition_list,times_relate,y_hat,y_loc,rule=rule)
+    # heading_selectivity_h1 = _selectivity(heading_per_trial,hidden1_activity,times_relate)
+    heading_selectivity_h1 = _z_selectivity(heading_per_trial,choice_per_trial,hidden1_activity,times_relate)
+    saccade_selectivity_h1 = _z_selectivity(sac_per_trial,heading_per_trial,hidden1_activity,times_relate)
+    # saccade_selectivity_h1 = _selectivity(sac_per_trial,hidden1_activity,times_relate)
+    # saccade_selectivity_h1 = _selectivity(sac_per_trial[select_0heading&select_T10],hidden1_activity[:,select_0heading&select_T10,:],times_relate)
+    # choice_selectivity_h1 = _z_selectivity(choice_per_trial,heading_per_trial,hidden1_activity,times_relate)
+
+    heading0_choice = choice_per_trial[select_0heading]
+    choice_selectivity_h1 = _selectivity(heading0_choice,hidden1_activity[:,select_0heading,:],times_relate)
+    # color_selectivity_h1 = _selectivity(T1loc_per_trial[select_0heading&select_sac0],hidden1_activity[:,select_0heading&select_sac0,:],times_relate)
+    color_selectivity_h1 = _selectivity(T1loc_per_trial,hidden1_activity,times_relate)
+    
+    if not hp.get("hidden_size2") is None:
+        # heading_selectivity_h2 = _selectivity(heading_per_trial,hidden2_activity,times_relate)
+        heading_selectivity_h2 = _z_selectivity(heading_per_trial,choice_per_trial,hidden2_activity,times_relate)
+        saccade_selectivity_h2 = _selectivity(sac_per_trial,hidden2_activity,times_relate)
+        # saccade_selectivity_h2 = _z_selectivity(sac_per_trial,heading_per_trial,hidden2_activity,times_relate)
+        choice_selectivity_h2 = _z_selectivity(choice_per_trial,heading_per_trial,hidden2_activity,times_relate)
+        # only use 0heading stimulus condition
+        # choice_selectivity_h2 = _selectivity(choice_per_trial[select_0heading],hidden2_activity[:,select_0heading,:],times_relate)
+        color_selectivity_h2 = _selectivity(T1loc_per_trial,hidden2_activity,times_relate)
+    
+    scale_factor = 2
+    scaled_effective_weight, sign_mask = scale_same_sign_connectivity(
+            effective_weight, hidden1_size, heading_selectivity_h1, choice_selectivity_h2, scale_factor
+        )        
+    
+    net.rnn.h2h.weight.data = scaled_effective_weight['H2H_weight']
+    
+    savepath='./checkpoint_scaled/'
+    outModelName_suffix='_feedback_x2'
+    # 生成输出文件名
+    original_name = os.path.basename(model_dir).replace('.t7', '')
+    outModelName = original_name + outModelName_suffix
+    # 保存缩放后的网络
+    checkpoint_scaled(net, hp, outModelName, savepath, scale_factor, model_dir)
+
+def scale_same_sign_connectivity(effective_weight, hidden1_size, heading_selectivity, choice_selectivity, scale_factor=2.0):
+    """
+    只缩放feedback连接权重（H2到H1的连接），其他权重保持不变
+    """
+    # 提取原始权重
+    H2H_weight = effective_weight['H2H_weight'].detach().cpu().numpy()
+    
+    # 提取H2到H1的feedback连接部分
+    Wh22h1 = H2H_weight[:hidden1_size, hidden1_size:]
+    original_Wh22h1 = Wh22h1.copy()
+    
+    # 初始化缩放后的矩阵
+    scaled_Wh22h1 = Wh22h1.copy()
+    
+    # 检查是否有selectivity数据
+    if len(heading_selectivity) > 0 and len(choice_selectivity) > 0:
+        # 对heading selectivity排序
+        sort_ind_heading = np.argsort(heading_selectivity[:, 0])
+        sorted_heading = heading_selectivity[sort_ind_heading, 0]
+        
+        # 对choice selectivity排序  
+        sort_ind_choice = np.argsort(choice_selectivity[:, 0])
+        sorted_choice = choice_selectivity[sort_ind_choice, 0]
+        
+        # 获取排序后的符号
+        heading_sign = np.sign(sorted_heading)
+        choice_sign = np.sign(sorted_choice)
+        
+        # 创建符号匹配的mask (True表示符号相同)
+        sign_match_mask = np.outer(heading_sign, choice_sign) > 0
+        
+        # 重新排列权重矩阵以匹配排序后的selectivity
+        Wh22h1_sorted = Wh22h1[:, sort_ind_choice]
+        Wh22h1_sorted = Wh22h1_sorted[sort_ind_heading, :]
+        
+        # 放大相同符号的连接
+        scaled_sorted_matrix = Wh22h1_sorted.copy()
+        scaled_sorted_matrix[sign_match_mask] = scaled_sorted_matrix[sign_match_mask] * scale_factor
+        
+        # 将缩放后的矩阵还原到原始顺序
+        # 首先还原行顺序 (heading)
+        inv_sort_heading = np.argsort(sort_ind_heading)
+        temp_matrix = scaled_sorted_matrix[inv_sort_heading, :]
+        
+        # 然后还原列顺序 (choice)
+        inv_sort_choice = np.argsort(sort_ind_choice)
+        scaled_Wh22h1 = temp_matrix[:, inv_sort_choice]
+        
+        print(f"Feedback连接缩放完成: {np.sum(sign_match_mask)} 个连接被放大 {scale_factor} 倍")
+        print(f"原始feedback权重范围: [{np.min(original_Wh22h1):.4f}, {np.max(original_Wh22h1):.4f}]")
+        print(f"缩放后feedback权重范围: [{np.min(scaled_Wh22h1):.4f}, {np.max(scaled_Wh22h1):.4f}]")
+        
+    else:
+        print("警告: 缺少selectivity数据，feedback权重保持不变")
+        sign_match_mask = None
+    
+    # 只更新H2H权重中的feedback部分，其他部分保持不变
+    scaled_H2H_weight = H2H_weight.copy()
+    scaled_H2H_weight[:hidden1_size, hidden1_size:] = scaled_Wh22h1
+    
+    # 更新effective_weight字典（只更新H2H_weight）
+    scaled_effective_weight = effective_weight.copy()
+    device = effective_weight['H2H_weight'].device
+    
+    # 将numpy数组转回tensor
+    scaled_effective_weight['H2H_weight'] = torch.tensor(scaled_H2H_weight, device=device)
+    
+    return scaled_effective_weight, sign_match_mask
+
+def checkpoint_scaled(model, hp, outModelName, savepath, scale_factor, original_model_path):
+    """
+    保存缩放后的网络，保持与原结构一致
+    """
+    print('saving scaled network...')
+    
+    state = {
+        'state_dict': model.state_dict(),
+
+        'rng_state': torch.get_rng_state(),
+        'hp': hp,
+
+    }
+    
+    if not os.path.isdir(savepath):
+        os.makedirs(savepath)
+        
+    torch.save(state, f'{savepath}{outModelName}.t7')
+    print(f"缩放网络已保存到: {savepath}{outModelName}.t7")
+    print(f"缩放信息: factor={scale_factor}, 原始模型={original_model_path}")
+
+
+
+
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+for i in [0]:
+    figname_suffix = f'checkgpu/{i}'
+    # model_dir = './checkpoint/checkrelu.t7'        
+    # model_dir = './checkpoint/onlyfeedforward.t7'      
+    model_dir = './checkpoint_batchnew1/4411colorhdnet8.t7'         
+    # model_dir = 'I:/model/data_simulation/neuralactivityinputtask/checkpoint_batchnew1/0421colorhdnet4.t7'
+    neuralactivity_color_dm(model_dir,device,figname_append=figname_suffix) 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

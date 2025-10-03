@@ -1,5 +1,12 @@
 # -*- coding: utf-8 -*-
 """
+Created on Thu Oct  2 15:03:40 2025
+build for check feedback structure
+
+@author: NaN
+"""
+# -*- coding: utf-8 -*-
+"""
 Created on Thu Feb 10 17:09:24 2022
 
 @author: NaN
@@ -43,7 +50,7 @@ from scipy.stats import pearsonr
 
 from tools_selectivity import _selectivity, _z_selectivity,plot_selectivity_corr
 from tools_psth import plot_population
-from tools_netplot import plot_input2neuron_connectivity,plot_h2h_connectivity,plot_h2output_connectivity,plot_forward_connectivity
+from tools_netplot import plot_input2neuron_connectivity,plot_h2h_connectivity,plot_h2output_connectivity,plot_forward_connectivity,plot_feedback_connectivity
 # plt.figure()
 # plt.close('all')
 THETA = 0.3 * np.pi
@@ -77,7 +84,7 @@ def _neuralactivity_dm(model_dir, rule, stim_mod, params_list, batch_shape,devic
     hp['sigma_rec1']=0.1
     hp['sigma_rec2']=0.1
     hp['fforwardstren']=1
-    hp['fbackstren']=0
+    hp['fbackstren']=1
     # hp['sigma_x'] = 0.1,
     net = Net(hp,device,dt = hp['dt']).to(device)
     #remove prefixe "module"
@@ -117,39 +124,7 @@ def _neuralactivity_dm(model_dir, rule, stim_mod, params_list, batch_shape,devic
     # return activity, test_trial, state_dict ,y_hat,y_loc,e_size,
     return activity, test_trial, state_dict, y_hat,y_loc,effective_weight,hp
 
-def neuralactivity_delaysac(model_dir,device,**kwargs):
-    rule = 'delaysaccade'
-    stim_mod = 1
-    stim_loc = np.linspace(0,315,num=8)/180*np.pi
-    n_rep = 8
-    unique_n_stim = len(stim_loc)
-    batch_size = n_rep*unique_n_stim
-    batch_shape = (n_rep,unique_n_stim)
-    ind_stim_loc,ind_stim = np.unravel_index(range(batch_size),batch_shape)
-    
-    stim_locs = stim_loc[ind_stim]
-    
-    params_list = list()
-    stim_times = [1200]
-    
-    for stim_time in stim_times:
-        params = {'stim_locs':stim_locs,
-                  'stim_time':stim_time}
-        
-        params_list.append(params)
-        
-    neural_activity,test_trial,state_dict,y_hat,y_loc,effective_weight,hp = _neuralactivity_dm(
-        model_dir, rule,stim_mod, params_list, batch_shape,device)
-    neural_activity = neural_activity.detach().numpy()
-    stim_ons = test_trial.ons
-    dt = test_trial.dt
-    times_relate = {'stim_ons':stim_ons,'dt':dt,'stim_dur':stim_times}
-    
-    input_list = ind_stim
-    # plot_input2neuron_connectivity(state_dict,heading_selectivity=None,rule=rule,figname_append = kwargs['figname_append'])    
-    # plot_h2h_connectivity(state_dict,heading_selectivity=None,saccade_selectivity=None,rule=rule,figname_append = kwargs['figname_append'])    
-    plot_h2output_connectivity(effective_weight,[],rule_name,rule=rule,figname_append = kwargs['figname_append'])    
-    # plot_population(neural_activity,input_list,times_relate)
+
     
 def neuralactivity_dm(model_dir,device,**kwargs):
     rule = 'dm'
@@ -319,7 +294,7 @@ def neuralactivity_color_dm(model_dir,device,**kwargs):
     stim3_locs = (stim2_locs+np.pi)%(2*np.pi)
     
     params_list = list()
-    stim1_times = [3000]
+    stim1_times = [1000]
     
     for stim1_time in stim1_times:
         params = {'stim1_locs': stim1_locs,
@@ -457,159 +432,19 @@ def neuralactivity_color_dm(model_dir,device,**kwargs):
     if not hp.get("hidden_size2") is None:
         h2para = {'color':[1,0,0],'marker':'.','text_y':0.6}
         
-    # plt.close('all')    
-    plt.figure()
-    figname = 'heading_vs_sac'
-    plt.xlabel('heading selectivity')
-    plt.ylabel('saccade selectivity')
-    plt.title('heading selectivity vs. saccade selectivity')
-    plot_selectivity_corr(heading_selectivity_h1,saccade_selectivity_h1,rule_name,rule=rule,figname=figname,figname_append = kwargs['figname_append'],para=h1para)
-    if not hp.get("hidden_size2") is None:
-        plot_selectivity_corr(heading_selectivity_h2,saccade_selectivity_h2,rule_name,rule=rule,figname=figname,figname_append = kwargs['figname_append'],para=h2para)
-    
-    plt.figure()
-    figname = 'heading_vs_choice'
-    plt.xlabel('heading selectivity')
-    plt.ylabel('choice selectivity')
-    plt.title('heading selectivity vs. choice selectivity')
-    plot_selectivity_corr(heading_selectivity_h1,choice_selectivity_h1,rule_name,rule=rule,figname=figname,figname_append = kwargs['figname_append'],para=h1para)
-    if not hp.get("hidden_size2") is None:
-        plot_selectivity_corr(heading_selectivity_h2,choice_selectivity_h2,rule_name,rule=rule,figname=figname,figname_append = kwargs['figname_append'],para=h2para)
-    
-    plt.figure()
-    figname = 'heading_vs_color'
-    plt.xlabel('heading selectivity')
-    plt.ylabel('color selectivity')
-    plt.title('heading selectivity vs. color selectivity')
-    plot_selectivity_corr(heading_selectivity_h1,color_selectivity_h1,rule_name,rule=rule,figname=figname,figname_append = kwargs['figname_append'],para=h1para)
-    if not hp.get("hidden_size2") is None:
-        plot_selectivity_corr(heading_selectivity_h2,color_selectivity_h2,rule_name,rule=rule,figname=figname,figname_append = kwargs['figname_append'],para=h2para)
-
-    plt.figure()
-    figname = 'sac_vs_color'
-    plt.xlabel('sac selectivity')
-    plt.ylabel('color selectivity')
-    plt.title('sac selectivity vs. color selectivity')    
-    plot_selectivity_corr(saccade_selectivity_h1,color_selectivity_h1,rule_name,rule=rule,figname=figname,figname_append = kwargs['figname_append'],para=h1para)
-    if not hp.get("hidden_size2") is None:
-        plot_selectivity_corr(saccade_selectivity_h2,color_selectivity_h2,rule_name,rule=rule,figname=figname,figname_append = kwargs['figname_append'],para=h2para)
-    
-    #plot left sac prefer neuron's heading&color cor
-    plt.figure()
-    figname = 'rightsac_color_vs_sac'
-    plt.xlabel('heading selectivity')
-    plt.ylabel('color selectivity')
-    plt.title('right sac prefer')
-    selecth1 = saccade_selectivity_h1[:,0]>0
-    selecth2 = saccade_selectivity_h2[:,0]>0
-    plot_selectivity_corr(heading_selectivity_h1[selecth1,:],color_selectivity_h1[selecth1,:],rule_name,rule=rule,figname=figname,figname_append = kwargs['figname_append'],para=h1para)
-    if not hp.get("hidden_size2") is None:
-        plot_selectivity_corr(heading_selectivity_h2[selecth2,:],color_selectivity_h2[selecth2,:],rule_name,rule=rule,figname=figname,figname_append = kwargs['figname_append'],para=h2para)
- 
-    #plot left sac prefer neuron's heading&color cor
-    plt.figure()
-    figname = 'leftsac_color_vs_sac'
-    plt.xlabel('heading selectivity')
-    plt.ylabel('color selectivity')
-    plt.title('left sac prefer')
-    selecth1 = saccade_selectivity_h1[:,0]<0
-    selecth2 = saccade_selectivity_h2[:,0]<0
-    plot_selectivity_corr(heading_selectivity_h1[selecth1,:],color_selectivity_h1[selecth1,:],rule_name,rule=rule,figname=figname,figname_append = kwargs['figname_append'],para=h1para)
-    if not hp.get("hidden_size2") is None:
-        plot_selectivity_corr(heading_selectivity_h2[selecth2,:],color_selectivity_h2[selecth2,:],rule_name,rule=rule,figname=figname,figname_append = kwargs['figname_append'],para=h2para)
- 
-    # E_neural_activity = neural_activity[:, :, :e_size]
-    # plot_input2neuron_connectivity(state_dict,heading_selectivity,rule=rule,figname_append = kwargs['figname_append'])  
-    # plt.figure(7)
-    plot_input2neuron_connectivity(effective_weight,[],rule_name,rule=rule,figname_append = kwargs['figname_append']) 
     plt.savefig("./lunwenfigure/input2hidden.svg")
     if not effective_weight.get("H2H_weight") is None:
         # plt.figure()
         plot_h2h_connectivity(effective_weight,[],[],rule_name,rule=rule,figname_append = kwargs['figname_append'])
         # plot_h2h_connectivity(effective_weight,np.vstack((heading_selectivity_h1,heading_selectivity_h2)),np.vstack((saccade_selectivity_h2,saccade_selectivity_h2)),rule_name,rule=rule,figname_append = kwargs['figname_append'])
-        plt.savefig("./lunwenfigure/h2h.svg")
+        # plt.savefig("./lunwenfigure/h2h.svg")
         # plot_forward_connectivity(effective_weight,hidden1_size,heading_selectivity_h1,saccade_selectivity_h2,rule_name,rule=rule,figname_append = kwargs['figname_append'])
-    # plt.figure()
-    plot_h2output_connectivity(effective_weight,[],rule_name,rule=rule,figname_append = kwargs['figname_append'])   
-    plt.savefig("./lunwenfigure/h2output.svg")
-    # plt.figure()# plot neural activity according to saccade direction
-    # sacdir_col_list = np.sign(sac_per_trial)*2+np.sign(T1loc_per_trial)
-    sacdir_list = np.sign(sac_per_trial)
-    stim_on = test_trial.on
-    dt = test_trial.dt
-    # stim_times = [1000]
-    times_relate = {'stim_on':stim_on,'dt':dt,'stim_dur':stim1_times}
-    plot_population(neural_activity[:,:,:hidden1_size],sacdir_list,times_relate)
-    plt.suptitle('hidden1_sac')
-    SetFigure()
-    plt.savefig("./lunwenfigure/h1population_sac.svg")
-    plot_population(neural_activity[:,:,hidden1_size:],sacdir_list,times_relate)
-    plt.suptitle('hidden2_sac') 
-    SetFigure()
-    plt.savefig("./lunwenfigure/h2population_sac.svg")
-    plot_population(neural_activity[:,:,:hidden1_size],choice_per_trial,times_relate)
-    plt.suptitle('hidden1_abschoice')
-    SetFigure()
-    plt.savefig("./lunwenfigure/h1population_choice.svg")
-    plot_population(neural_activity[:,:,hidden1_size:],choice_per_trial,times_relate)
-    plt.suptitle('hidden2_abschoice')
-    SetFigure()
-    plt.savefig("./lunwenfigure/h2population_choice.svg")
+        plot_feedback_connectivity(effective_weight,hidden1_size,heading_selectivity_h1,choice_selectivity_h2,rule_name,rule=rule)
+
     
     
 
-    h1abs_para = {'color': [x/255 + y*0.75*(1-1*2/4) for x, y in zip([139,10,80], [1,1,1])]}
-    h1sac_para = {'color': [x/255 + y*0.75*(1-1*2/4) for x, y in zip([0,0,139], [1,1,1])]}
-    if not hp.get("hidden_size2") is None:
-        h2abs_para = {'color': [x/255 for x in [139,10,80]]}
-        h2sac_para = {'color': [x/255 for x in [0,0,139]]}
-    # plt.figure(11,figsize=(10, 16))# plot saccade divergence
-    plt.figure(figsize=(10, 6))  # 宽度为10，高度为5
-    figname = 'saccade_div'
-    plt.title('saccade_div')
-    # L1_sactime = get_divergence(sacdir_list[select_0heading],neural_activity[:,select_0heading,:hidden1_size],times_relate,rule_name,rule=rule,
-                                # figname=figname,figname_append = kwargs['figname_append'],iarea=1,para=h1sac_para)
-    # plot_divergence(sacdir_list[select_0heading],neural_activity[:,select_0heading,:hidden1_size],times_relate,rule_name,
-                    # rule=rule,figname=figname,figname_append = kwargs['figname_append'],iarea=1,para=h1sac_para,doplot=1)
-    L1_sactime = plot_conditioned_divergence(sacdir_list,heading_per_trial,neural_activity[:,:,:hidden1_size],times_relate,rule_name,rule=rule,figname=figname,
-                    figname_append = kwargs['figname_append'],iarea=1,para=h1sac_para,doplot=1)
-    # plot_conditioned_divergence(sacdir_list,heading_per_trial,neural_activity[:,:,:hidden1_size],times_relate,rule_name,rule=rule,figname=figname,figname_append = kwargs['figname_append'],iarea=1,para=h1abs_para)
 
-    SetFigure(15)
-    plt.show()
-    if not hp.get("hidden_size2") is None:
-        # plot_divergence(sacdir_list[select_0heading],neural_activity[:,select_0heading,hidden1_size:],times_relate,rule_name,
-                        # rule=rule,figname=figname,figname_append = kwargs['figname_append'],iarea=2,para=h2sac_para,doplot=1)
-        SetFigure(15)
-        plt.show()
-        L2_sactime = plot_conditioned_divergence(sacdir_list,heading_per_trial,neural_activity[:,:,hidden1_size:],times_relate,rule_name,rule=rule,
-                        figname=figname,figname_append = kwargs['figname_append'],iarea=2,para=h2sac_para,doplot=1)
-    plt.savefig("./lunwenfigure/sac.svg")
-    
-    plt.figure(figsize=(10, 6))
-    figname = 'choice_div'
-    plt.title('choice_div')
-    L1_choicetime = plot_conditioned_divergence(choice_per_trial,heading_per_trial,neural_activity[:,:,:hidden1_size],times_relate,rule_name,rule=rule,
-                                figname=figname,figname_append = kwargs['figname_append'],iarea=1,para=h1abs_para,doplot=1)
-    heading0_choice = choice_per_trial[select_0heading]
-    heading0_h1_activity = neural_activity[:,select_0heading,:hidden1_size]
-    heading0_h2_activity = neural_activity[:,select_0heading,hidden1_size:]
-    # plot_divergence(heading0_choice,heading0_h1_activity,times_relate,rule_name,rule=rule,
-                    # figname=figname,figname_append = kwargs['figname_append'],iarea=1,para=h1abs_para,doplot=1)
-    SetFigure(15)
-    plt.show()
-    L1_choicetime = get_divergence(heading0_choice,heading0_h1_activity,times_relate,rule_name,rule=rule,
-                                   figname=figname,figname_append = kwargs['figname_append'],iarea=1,para=h1abs_para,doplot=1)
-    if not hp.get("hidden_size2") is None:
-        L2_choicetime = plot_conditioned_divergence(choice_per_trial,heading_per_trial,neural_activity[:,:,hidden1_size:],times_relate,rule_name,rule=rule,
-                                    figname=figname,figname_append = kwargs['figname_append'],iarea=2,para=h2abs_para,doplot=1)
-        # plot_divergence(heading0_choice,heading0_h2_activity,times_relate,rule_name,rule=rule,
-                        # figname=figname,figname_append = kwargs['figname_append'],iarea=2,para=h2abs_para,doplot=1)
-        SetFigure(15)
-        plt.show()
-        # L2_choicetime = get_divergence(heading0_choice,heading0_h2_activity,times_relate,rule_name,rule=rule,figname=figname,
-                                       # figname_append = kwargs['figname_append'],iarea=2,para=h2abs_para,doplot=1)   
-    plt.savefig("./lunwenfigure/abschoice.svg")
 def plot_corr_heading_color_sac(heading_selectivity,saccade_selectivity,color_selectivity,**kwargs):
     import seaborn as sns
     
