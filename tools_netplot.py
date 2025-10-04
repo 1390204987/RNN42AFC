@@ -188,6 +188,8 @@ def plot_feedback_connectivity(effective_weight,hidden1_size,heading_selectivity
             # 添加文本标签说明分界线含义
             plt.text(change_pos - 0.5, show_Wh22h1.shape[0] * 1.02, 'choice\nZero', 
                     horizontalalignment='center', verticalalignment='bottom', fontsize=8, color='black')
+            
+ 
     
     plt.grid(False)
     plt.colorbar()
@@ -200,5 +202,50 @@ def plot_feedback_connectivity(effective_weight,hidden1_size,heading_selectivity
         figname = './batchfigure/'+rule_name[kwargs['rule']].replace(' ','')+'/HD_H22H1'
     plt.savefig(figname+'.png', transparent=True)    
     
+    # ----------------------------
+    # 创建符号 mask
+    # ----------------------------
+    if len(heading_selectivity) > 0 and len(choice_selectivity) > 0:
+        heading_sign = np.sign(sorted_heading)
+        choice_sign = np.sign(sorted_choice)
+        sign_match_mask = np.outer(heading_sign, choice_sign) > 0
+        sign_opposite_mask = ~sign_match_mask
+    else:
+        sign_match_mask = np.ones_like(Wh22h1, dtype=bool)
+        sign_opposite_mask = np.zeros_like(Wh22h1, dtype=bool)
     
+    # ----------------------------
+    # 提取两组权重
+    # ----------------------------
+    weights_same = Wh22h1[sign_match_mask]
+    weights_opposite = Wh22h1[sign_opposite_mask]
+    
+    # ----------------------------
+    # 绘图
+    # ----------------------------
+    
+    plt.figure(figsize=(6,4))
+    plt.hist(weights_same, bins=100, alpha=0.6, label='same sign', color='blue', log=True)
+    plt.hist(weights_opposite, bins=100, alpha=0.6, label='opposite sign', color='orange', log=True)
+    plt.xlabel('Feedback weights (H2->H1)')
+    plt.ylabel('Count (log scale)')
+    plt.title('Distribution of feedback weights (log scale)')
+    plt.legend()
+    plt.show()
+    
+    
+    plt.figure(figsize=(4,5))
+    plt.violinplot([weights_same, weights_opposite], showmedians=True)
+    plt.xticks([1,2], ['same', 'opposite'])
+    plt.ylabel('Feedback weights (H2->H1)')
+    plt.title('Weight distribution by sign match')
+    plt.show()
+    
+    epsilon = 1e-6  # 根据你的数据规模调整
+    weights_same_log = weights_same[weights_same>0.01]
+    weights_opposite_log = weights_opposite[weights_opposite>0.01]
+    
+    from scipy.stats import mannwhitneyu
+    stat, p = mannwhitneyu(weights_same_log, weights_opposite_log, alternative='two-sided')
+    print(f"Mann-Whitney U: stat={stat}, p={p}")
     

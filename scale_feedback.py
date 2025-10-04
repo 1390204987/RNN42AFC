@@ -75,7 +75,7 @@ def _neuralactivity_dm(model_dir, rule, stim_mod, params_list, batch_shape,devic
     hp['sigma_rec1']=0.1
     hp['sigma_rec2']=0.1
     hp['fforwardstren']=1
-    hp['fbackstren']=0
+    hp['fbackstren']=1
     # hp['sigma_x'] = 0.1,
     net = Net(hp,device,dt = hp['dt']).to(device)
     #remove prefixe "module"
@@ -277,13 +277,22 @@ def neuralactivity_color_dm(model_dir,device,**kwargs):
         # only use 0heading stimulus condition
         # choice_selectivity_h2 = _selectivity(choice_per_trial[select_0heading],hidden2_activity[:,select_0heading,:],times_relate)
         color_selectivity_h2 = _selectivity(T1loc_per_trial,hidden2_activity,times_relate)
-    
-    scale_factor = 2
-    scaled_effective_weight, sign_mask = scale_same_sign_connectivity(
-            effective_weight, hidden1_size, heading_selectivity_h1, choice_selectivity_h2, scale_factor
-        )        
-    
-    net.rnn.h2h.weight.data = scaled_effective_weight['H2H_weight']
+        
+        
+
+    # old_weight = net.rnn.h2h.weight.data.clone()
+    scale_factor = 1.5
+    scaled_weight = scale_feedback_weights(
+        net, hidden1_size, heading_selectivity_h1, choice_selectivity_h2, scale_factor
+    )
+
+
+    with torch.no_grad():
+        # 确保形状一致
+        assert scaled_weight.shape == net.rnn.h2h.weight.data.shape
+        # 原地更新网络权重
+        net.rnn.h2h.weight.data.copy_(scaled_weight)
+
     
     savepath='./checkpoint_scaled/'
     outModelName_suffix='_feedback_x2'
@@ -292,75 +301,74 @@ def neuralactivity_color_dm(model_dir,device,**kwargs):
     outModelName = original_name + outModelName_suffix
     # 保存缩放后的网络
     checkpoint_scaled(net, hp, outModelName, savepath, scale_factor, model_dir)
+    
+    # reloaded = torch.load(f'{savepath}{outModelName}.t7', map_location=device)
+    # state_dict = reloaded['state_dict']
+    # new_weights = state_dict['rnn.h2h.weight']
+    
+    # diff = (new_weights - old_weight).abs().max()
+    # print("Reloaded diff:", diff.item())
 
-def scale_same_sign_connectivity(effective_weight, hidden1_size, heading_selectivity, choice_selectivity, scale_factor=2.0):
+def scale_feedback_weights(net, hidden1_size, heading_selectivity, choice_selectivity, scale_factor=1.0):
     """
-    只缩放feedback连接权重（H2到H1的连接），其他权重保持不变
+    只缩放 H2 -> H1 的 feedback 权重（net.rnn.h2h.weight）
+    scale_factor=1.0 时原始权重不变
     """
-    # 提取原始权重
-    H2H_weight = effective_weight['H2H_weight'].detach().cpu().numpy()
-    
-    # 提取H2到H1的feedback连接部分
-    Wh22h1 = H2H_weight[:hidden1_size, hidden1_size:]
-    original_Wh22h1 = Wh22h1.copy()
-    
-    # 初始化缩放后的矩阵
-    scaled_Wh22h1 = Wh22h1.copy()
-    
-    # 检查是否有selectivity数据
-    if len(heading_selectivity) > 0 and len(choice_selectivity) > 0:
-        # 对heading selectivity排序
-        sort_ind_heading = np.argsort(heading_selectivity[:, 0])
-        sorted_heading = heading_selectivity[sort_ind_heading, 0]
-        
-        # 对choice selectivity排序  
-        sort_ind_choice = np.argsort(choice_selectivity[:, 0])
-        sorted_choice = choice_selectivity[sort_ind_choice, 0]
-        
-        # 获取排序后的符号
-        heading_sign = np.sign(sorted_heading)
-        choice_sign = np.sign(sorted_choice)
-        
-        # 创建符号匹配的mask (True表示符号相同)
-        sign_match_mask = np.outer(heading_sign, choice_sign) > 0
-        
-        # 重新排列权重矩阵以匹配排序后的selectivity
-        Wh22h1_sorted = Wh22h1[:, sort_ind_choice]
-        Wh22h1_sorted = Wh22h1_sorted[sort_ind_heading, :]
-        
-        # 放大相同符号的连接
-        scaled_sorted_matrix = Wh22h1_sorted.copy()
-        scaled_sorted_matrix[sign_match_mask] = scaled_sorted_matrix[sign_match_mask] * scale_factor
-        
-        # 将缩放后的矩阵还原到原始顺序
-        # 首先还原行顺序 (heading)
-        inv_sort_heading = np.argsort(sort_ind_heading)
-        temp_matrix = scaled_sorted_matrix[inv_sort_heading, :]
-        
-        # 然后还原列顺序 (choice)
-        inv_sort_choice = np.argsort(sort_ind_choice)
-        scaled_Wh22h1 = temp_matrix[:, inv_sort_choice]
-        
-        print(f"Feedback连接缩放完成: {np.sum(sign_match_mask)} 个连接被放大 {scale_factor} 倍")
-        print(f"原始feedback权重范围: [{np.min(original_Wh22h1):.4f}, {np.max(original_Wh22h1):.4f}]")
-        print(f"缩放后feedback权重范围: [{np.min(scaled_Wh22h1):.4f}, {np.max(scaled_Wh22h1):.4f}]")
-        
-    else:
-        print("警告: 缺少selectivity数据，feedback权重保持不变")
-        sign_match_mask = None
-    
-    # 只更新H2H权重中的feedback部分，其他部分保持不变
-    scaled_H2H_weight = H2H_weight.copy()
-    scaled_H2H_weight[:hidden1_size, hidden1_size:] = scaled_Wh22h1
-    
-    # 更新effective_weight字典（只更新H2H_weight）
-    scaled_effective_weight = effective_weight.copy()
-    device = effective_weight['H2H_weight'].device
-    
-    # 将numpy数组转回tensor
-    scaled_effective_weight['H2H_weight'] = torch.tensor(scaled_H2H_weight, device=device)
-    
-    return scaled_effective_weight, sign_match_mask
+    with torch.no_grad():
+        # 原始权重
+        H2H_weight = net.rnn.h2h.weight.data.clone()
+        device, dtype = H2H_weight.device, H2H_weight.dtype
+
+        # 取出 H2->H1 feedback 部分
+        Wh22h1 = H2H_weight[:hidden1_size, hidden1_size:].cpu().numpy()
+        scaled_Wh22h1 = Wh22h1.copy()
+
+        if len(heading_selectivity) > 0 and len(choice_selectivity) > 0:
+            # 排序
+            sort_ind_choice = np.argsort(choice_selectivity[:, 0])
+            sort_ind_heading = np.argsort(heading_selectivity[:, 0])
+
+            heading_sign = np.sign(heading_selectivity[sort_ind_heading, 0])
+            choice_sign = np.sign(choice_selectivity[sort_ind_choice, 0])
+
+            sign_match_mask = np.outer(np.sign(heading_selectivity[sort_ind_heading, 0]),
+                                       np.sign(choice_selectivity[sort_ind_choice, 0])) > 0
+
+            # 按排序顺序排列矩阵
+            Wh_sorted = Wh22h1[sort_ind_heading, :]
+            Wh_sorted = Wh_sorted[:, sort_ind_choice]
+
+            # 仅缩放符号匹配的连接
+            # Wh_sorted[sign_match_mask] *= scale_factor
+            
+            num_match = np.sum(sign_match_mask)
+            
+            # 设置正态分布参数
+            mu = 0.1
+            sigma = 0.2/ 6  # 6σ ≈ 0.002
+            
+            # 生成随机矩阵
+            rand_matrix = np.random.normal(loc=mu, scale=sigma, size=num_match)
+            
+            # 将随机矩阵加到符号匹配的位置
+            Wh_sorted[sign_match_mask] += rand_matrix
+            # Wh_sorted[sign_match_mask] += 0.1
+
+            # 还原顺序
+            inv_sort_choice = np.argsort(sort_ind_choice)
+            temp = Wh_sorted[:, inv_sort_choice]
+            inv_sort_heading = np.argsort(sort_ind_heading)
+            scaled_Wh22h1 = temp[inv_sort_heading, :]
+
+        # 更新到原始 tensor 中，只改 feedback 部分
+        H2H_weight[:hidden1_size, hidden1_size:] = torch.from_numpy(scaled_Wh22h1).to(device=device, dtype=dtype)
+        net.rnn.h2h.weight.data.copy_(H2H_weight)
+
+        return H2H_weight  # 返回修改后的 tensor，便于 debug
+
+
+
+
 
 def checkpoint_scaled(model, hp, outModelName, savepath, scale_factor, original_model_path):
     """

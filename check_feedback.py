@@ -489,7 +489,8 @@ for i in [0]:
     figname_suffix = f'checkgpu/{i}'
     # model_dir = './checkpoint/checkrelu.t7'        
     # model_dir = './checkpoint/onlyfeedforward.t7'      
-    model_dir = './checkpoint_batchnew1/4411colorhdnet8.t7'         
+    # model_dir = './checkpoint_batchnew1/4411colorhdnet8.t7'         
+    model_dir = './checkpoint_scaled/4411colorhdnet8_feedback_x2.t7'    
     # model_dir = 'I:/model/data_simulation/neuralactivityinputtask/checkpoint_batchnew1/0421colorhdnet4.t7'
     neuralactivity_color_dm(model_dir,device,figname_append=figname_suffix) 
     # psychometric_color_dm(model_dir,figname_append=figname_suffix)
