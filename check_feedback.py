@@ -438,7 +438,7 @@ def neuralactivity_color_dm(model_dir,device,**kwargs):
         plot_h2h_connectivity(effective_weight,[],[],rule_name,rule=rule,figname_append = kwargs['figname_append'])
         # plot_h2h_connectivity(effective_weight,np.vstack((heading_selectivity_h1,heading_selectivity_h2)),np.vstack((saccade_selectivity_h2,saccade_selectivity_h2)),rule_name,rule=rule,figname_append = kwargs['figname_append'])
         # plt.savefig("./lunwenfigure/h2h.svg")
-        # plot_forward_connectivity(effective_weight,hidden1_size,heading_selectivity_h1,saccade_selectivity_h2,rule_name,rule=rule,figname_append = kwargs['figname_append'])
+        plot_forward_connectivity(effective_weight,hidden1_size,heading_selectivity_h1,choice_selectivity_h2,rule_name,rule=rule,figname_append = kwargs['figname_append'])
         plot_feedback_connectivity(effective_weight,hidden1_size,heading_selectivity_h1,choice_selectivity_h2,rule_name,rule=rule)
 
     
@@ -466,7 +466,7 @@ def plot_corr_heading_color_sac(heading_selectivity,saccade_selectivity,color_se
         figname = './neuralfigure/'+rule_name[kwargs['rule']].replace(' ','')+kwargs['figname_append']+'/sac_heading&color'
     else:  
         figname = './neuralfigure/'+rule_name[kwargs['rule']].replace(' ','')+'/sac_heading&color'
-    plt.savefig(figname+'.png', transparent=True)     
+    plt.savefig(figname+'.svg', transparent=True)     
     
 
 # model_dir = './checkpoint/1hiddenHDsignrestrict.t7'           
@@ -489,8 +489,8 @@ for i in [0]:
     figname_suffix = f'checkgpu/{i}'
     # model_dir = './checkpoint/checkrelu.t7'        
     # model_dir = './checkpoint/onlyfeedforward.t7'      
-    # model_dir = './checkpoint_batchnew1/4411colorhdnet8.t7'         
-    model_dir = './checkpoint_scaled/4411colorhdnet8_feedback_x2.t7'    
+    model_dir = './checkpoint_batchnew1/4411colorhdnet8.t7'         
+    # model_dir = './checkpoint_scaled/4411colorhdnet8_feedback_x2.t7'    
     # model_dir = 'I:/model/data_simulation/neuralactivityinputtask/checkpoint_batchnew1/0421colorhdnet4.t7'
     neuralactivity_color_dm(model_dir,device,figname_append=figname_suffix) 
     # psychometric_color_dm(model_dir,figname_append=figname_suffix)

@@ -110,23 +110,54 @@ def plot_connectivity(state_dict,**kwargs):
 def plot_forward_connectivity(effective_weight,hidden1_size,heading_selectivity,saccade_selectivity,rule_name,**kwargs):
     
     Wh2h = effective_weight['H2H_weight']
-    Wh2h = Wh2h.detach().numpy()
+    Wh2h = Wh2h.detach().cpu().numpy()
     Wh12h2 = Wh2h[hidden1_size:,:hidden1_size]
     Wlim = np.max(np.abs(Wh12h2))
     
     if len(heading_selectivity) == 0:
         sort_ind_heading = np.arange(0,Wh12h2.shape[1],1,dtype=int)
+        # 如果没有heading selectivity数据，不绘制分界线
+        plot_heading_divider = False
     else:
         sort_ind_heading = np.argsort(heading_selectivity[:,0])
+        sorted_heading = heading_selectivity[sort_ind_heading, 0]
+        positive_indices = np.where(sorted_heading > 0)[0]
+        first_positive = positive_indices[0]
+        heading_sign_changes = [first_positive]
+        plot_heading_divider = len(heading_sign_changes) > 0
     if len(saccade_selectivity) == 0:
         sort_ind_saccade = np.arange(0,Wh12h2.shape[0])
+        plot_saccade_divider = False
     else:
         sort_ind_saccade = np.argsort(saccade_selectivity[:,0])
+        sorted_saccade = saccade_selectivity[sort_ind_saccade, 0]
+        positive_indices = np.where(sorted_saccade > 0)[0]
+        first_positive = positive_indices[0]
+        saccade_sign_changes = [first_positive]
+        plot_saccade_divider = len(saccade_sign_changes) > 0
     Wh12h2 = Wh12h2[:,sort_ind_heading]
     show_Wh12h2 = Wh12h2[sort_ind_saccade,:]
     plt.figure()
     # plt.imshow(Wh2h, cmap = 'bwr_r',vmin=-Wlim, vmax=Wlim)
     plt.imshow(show_Wh12h2, cmap = 'bwr_r',vmin=-Wlim, vmax=Wlim,origin='lower')
+    
+    # 标记heading selectivity符号变化的分界线
+    if plot_saccade_divider:
+        for change_pos in saccade_sign_changes:
+            plt.axhline(y=change_pos - 0.5, color='black', linewidth=2, linestyle='--', alpha=0.8)
+            # 添加文本标签说明分界线含义
+            plt.text(show_Wh12h2.shape[1] * 1.02, change_pos - 0.5, 'Heading\nZero', 
+                    verticalalignment='center', fontsize=8, color='black')
+    
+    # 标记heading selectivity符号变化的分界线
+    if plot_heading_divider:
+        for change_pos in heading_sign_changes:
+            plt.axvline(x=change_pos - 0.5, color='black', linewidth=2, linestyle='--', alpha=0.8)
+            # 添加文本标签说明分界线含义
+            plt.text(change_pos - 0.5, show_Wh12h2.shape[0] * 1.02, 'choice\nZero', 
+                    horizontalalignment='center', verticalalignment='bottom', fontsize=8, color='black')
+
+    
     plt.grid(False)
     plt.colorbar()
     plt.xlabel('from hidden(sort by selectivity)')
@@ -137,6 +168,52 @@ def plot_forward_connectivity(effective_weight,hidden1_size,heading_selectivity,
     else:  
         figname = './batchfigure/'+rule_name[kwargs['rule']].replace(' ','')+'/1hiddenHD_H12H2'
     plt.savefig(figname+'.png', transparent=True)
+    
+    
+    # ----------------------------
+    # 创建符号 mask
+    # ----------------------------
+    if len(heading_selectivity) > 0 and len(saccade_selectivity) > 0:
+        heading_sign = np.sign(sorted_heading)
+        saccade_sign = np.sign(sorted_saccade)
+        sign_match_mask = np.outer(saccade_sign, heading_sign) > 0
+        sign_opposite_mask = ~sign_match_mask
+    else:
+        sign_match_mask = np.ones_like(Wh12h2, dtype=bool)
+        sign_opposite_mask = np.zeros_like(Wh12h2, dtype=bool)
+        
+    # ----------------------------
+    # 提取两组权重
+    # ----------------------------
+    weights_same = Wh12h2[sign_match_mask]
+    weights_opposite = Wh12h2[sign_opposite_mask]
+    
+    # ----------------------------
+    # 绘图
+    # ----------------------------
+    plt.figure(figsize=(6,4))
+    plt.hist(weights_same, bins=100, alpha=0.6, label='same sign', color='blue', log=True)
+    plt.hist(weights_opposite, bins=100, alpha=0.6, label='opposite sign', color='orange', log=True)
+    plt.xlabel('Feedback weights (H2->H1)')
+    plt.ylabel('Count (log scale)')
+    plt.title('Distribution of feedback weights (log scale)')
+    plt.legend()
+    # 关键：设置合适的 Y 轴范围，避免条形超出边界
+    plt.ylim(bottom=0.8)  # log scale 下从 1 开始（因为 log(1)=0）
+    # 或者自动计算合适的范围
+    current_ylim = plt.ylim()
+    plt.ylim(0.8, current_ylim[1])  # 保持上限，只调整下限
+    plt.show()
+    
+    epsilon = 1e-6  # 根据你的数据规模调整
+    weights_same_log = weights_same[weights_same>0.01]
+    weights_opposite_log = weights_opposite[weights_opposite>0.01]
+    
+
+    from scipy.stats import mannwhitneyu
+    stat, p = mannwhitneyu(weights_same_log, weights_opposite_log, alternative='two-sided')
+    print(f"Mann-Whitney U: stat={stat}, p={p}")
+    
     
 def plot_feedback_connectivity(effective_weight,hidden1_size,heading_selectivity,choice_selectivity,rule_name,**kwargs):
     
@@ -195,12 +272,12 @@ def plot_feedback_connectivity(effective_weight,hidden1_size,heading_selectivity
     plt.colorbar()
     plt.xlabel('from hidden(sort by choice)')
     plt.ylabel('to hidden(sort by heading)')
-    plt.title('forward connectivity')
+    # plt.title('forward connectivity')
     if 'figname_append' in kwargs:
-        figname = './batchfigure/'+rule_name[kwargs['rule']].replace(' ','')+'/'+kwargs['figname_append']+'/H22H1'
+        figname = './lunwenfigure/'+'/'+kwargs['figname_append']+'/feedback1'
     else:  
-        figname = './batchfigure/'+rule_name[kwargs['rule']].replace(' ','')+'/HD_H22H1'
-    plt.savefig(figname+'.png', transparent=True)    
+        figname = './lunwenfigure/'+'/feedback1'
+    plt.savefig(figname+'.svg', transparent=True)    
     
     # ----------------------------
     # 创建符号 mask
@@ -231,20 +308,20 @@ def plot_feedback_connectivity(effective_weight,hidden1_size,heading_selectivity
     plt.ylabel('Count (log scale)')
     plt.title('Distribution of feedback weights (log scale)')
     plt.legend()
+    # 关键：设置合适的 Y 轴范围，避免条形超出边界
+    plt.ylim(bottom=0.8)  # log scale 下从 1 开始（因为 log(1)=0）
+    # 或者自动计算合适的范围
+    current_ylim = plt.ylim()
+    plt.ylim(0.8, current_ylim[1])  # 保持上限，只调整下限
     plt.show()
-    
-    
-    plt.figure(figsize=(4,5))
-    plt.violinplot([weights_same, weights_opposite], showmedians=True)
-    plt.xticks([1,2], ['same', 'opposite'])
-    plt.ylabel('Feedback weights (H2->H1)')
-    plt.title('Weight distribution by sign match')
-    plt.show()
+    figname = './lunwenfigure/'+'/feedback2'
+    plt.savefig(figname+'.pdf', bbox_inches='tight',pad_inches=0.02,transparent=True)    
     
     epsilon = 1e-6  # 根据你的数据规模调整
     weights_same_log = weights_same[weights_same>0.01]
     weights_opposite_log = weights_opposite[weights_opposite>0.01]
     
+
     from scipy.stats import mannwhitneyu
     stat, p = mannwhitneyu(weights_same_log, weights_opposite_log, alternative='two-sided')
     print(f"Mann-Whitney U: stat={stat}, p={p}")
