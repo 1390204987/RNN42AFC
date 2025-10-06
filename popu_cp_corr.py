@@ -14,7 +14,7 @@ import torch.optim as optim
 from roc_tool import rocN
 import scipy.stats as stats
 from scipy.optimize import curve_fit
-from sklearn.metrics import auc
+# from sklearn.metrics import auc
 import seaborn as sns
 
 import mytask
@@ -574,8 +574,8 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 for i in [0]:
     figname_suffix = f'checkgpu/{i}'
     # model_dir = './checkpoint/onlyfeedforward.t7'         
-    # model_dir = './checkpoint_batcrhnew1/0400colorhdnet8.t7'  
-    model_dir = './checkpoint/checkGPU.t7'    
+    model_dir = './checkpoint_batchnew1/0400colorhdnet8.t7'  
+    # model_dir = './checkpoint/checkgpu.t7'    
     # model_dir = 'I:/model/data_simulation/neuralactivityinputtask/checkpoint_batchnew1/0421colorhdnet4.t7'
     neuralactivity_color_dm(model_dir,device,figname_append=figname_suffix) 
     # psychometric_color_dm(model_dir,figname_append=figname_suffix)

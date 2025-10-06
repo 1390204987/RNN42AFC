@@ -619,7 +619,8 @@ def coltargdm(config, mode, stim_mod, device='cuda', **kwargs):
         batch_size = len(stim1_locs)
         
         stim_dur = int(p['stim_time']/dt)
-        stim1_on = int(torch.randint(100, 600, (1,), device=device).item() / dt)  # 在CPU上生成然后转换
+        # stim1_on = int(torch.randint(100, 600, (1,), device=device).item() / dt)  # 在CPU上生成然后转换
+        stim1_on = int(200/ dt)  # 在CPU上生成然后转换
         stim1_off = stim1_on + stim_dur
         fix_off = stim1_off + int(50/dt)
         stim2_on = stim1_on

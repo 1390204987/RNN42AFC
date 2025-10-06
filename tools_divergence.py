@@ -484,7 +484,7 @@ def plot_conditioned_divergence(var_list1,var_list2,neural_activity,times_relate
         
         os.makedirs(pathname,exist_ok=True)
         plt.savefig(figname+'.png', transparent=True) 
-    return start_time
+    return start_time,meandivergence,meandivergence_shuffle_avg
 # 找到连续的显著时间点区间
 def find_continuous_segments(time_points,step_size,min_length=5):
     if len(time_points) == 0:
