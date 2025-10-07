@@ -336,8 +336,8 @@ for net in nets:
     # 将L1_temporal和L2_temporal分别保存为DataFrame的列
     df_L1temporal[col_name] = L1_sactemporal
     df_L2temporal[col_name] = L2_sactemporal
-    df_L1shu_temporal[col_name] = L1_sactemporal
-    df_L2shu_temporal[col_name] = L2_sactemporal
+    df_L1shu_temporal[col_name] = L1_shuffle_sac
+    df_L2shu_temporal[col_name] = L2_shuffle_sac
     
     
 # 保存到Excel的两个不同sheet中
@@ -349,8 +349,8 @@ with pd.ExcelWriter("./sacROC_batch3.xlsx") as writer:
 with pd.ExcelWriter("./sactemporal_batch3.xlsx") as writer:
     df_L1temporal.to_excel(writer, sheet_name='L1_sactemporal', index=False)
     df_L2temporal.to_excel(writer, sheet_name='L2_sactemporal', index=False)
-    df_L1shu_temporal.to_excel(writer, sheet_name='L1_sactemporal', index=False)
-    df_L2shu_temporal.to_excel(writer, sheet_name='L2_sactemporal', index=False)
+    df_L1shu_temporal.to_excel(writer, sheet_name='shu_L1_sactemporal', index=False)
+    df_L2shu_temporal.to_excel(writer, sheet_name='shu_L2_sactemporal', index=False)
 
 print(f"保存完成！")
 print(f"L1_sacROC sheet: {df_L1.shape[1]}个net, 每个net {df_L1.shape[0]}个值")
