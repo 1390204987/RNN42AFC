@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy import stats
 import seaborn as sns
-def simple_temporal_plot_combined(file1, file2):
+def simple_temporal_plot_combined(file1, file2,times_relate):
     """简洁版本的时间序列图 - 合并显示"""
     
     # 加载数据
@@ -28,28 +28,36 @@ def simple_temporal_plot_combined(file1, file2):
     df2_L2_shu = pd.read_excel(file2, sheet_name='shu_L2_sactemporal', index_col=0)
     
     time_points = np.arange(len(df1_L1_temp))
+    time_points_ms = time_points * times_relate['dt']-times_relate['stim_on']
     
     # 创建两个图形：L1和L2
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6))
-    
+    fig, ax1 = plt.subplots(figsize=(8, 6))  # 创建图形和坐标轴 
     # L1_sactemporal - 两个文件在同一坐标轴
-    plot_combined_temporal(ax1, time_points, 
+    plot_combined_temporal(ax1, time_points_ms, 
                           df1_L1_temp, df1_L1_shu, 'File1',
                           df2_L1_temp, df2_L1_shu, 'File2',
-                          'L1_sactemporal 时间序列对比')
+                          'L1_sactemporal')
+    # 在stim1 on和off时间点画竖线
+    ax1.axvline(x=0, color='gray', linestyle='--', alpha=0.7, label='Stim On')
+    ax1.axvline(x=times_relate['stim_dur'], color='gray', linestyle='--', alpha=0.7, label='Stim Off')
+    plt.savefig("./lunwenfigure/cutfeedback_training.svg")
     
+    fig, ax2 = plt.subplots(figsize=(8, 6))  # 创建图形和坐标轴
     # L2_sactemporal - 两个文件在同一坐标轴
-    plot_combined_temporal(ax2, time_points,
+    plot_combined_temporal(ax2, time_points_ms,
                           df1_L2_temp, df1_L2_shu, 'File1',
                           df2_L2_temp, df2_L2_shu, 'File2',
-                          'L2_sactemporal 时间序列对比')
+                          'L2_sactemporal')
+    # 在stim1 on和off时间点画竖线
+    ax1.axvline(x=0, color='gray', linestyle='--', alpha=0.7, label='Stim On')
+    ax1.axvline(x=times_relate['stim_dur'], color='gray', linestyle='--', alpha=0.7, label='Stim Off')
     
-    plt.tight_layout()
     plt.show()
 
 def plot_combined_temporal(ax, time_points, temp_data1, shu_data1, label1, temp_data2, shu_data2, label2, title):
     """在同一坐标轴上绘制两个文件的时间序列"""
-    
+    f1 = {'color': [x/255 + y*0.75*(1-1*2/4) for x, y in zip([0,0,139], [1,1,1])],'linestyle':'-'}
+    f2 = {'color': [x/255 + y*0.75*(1-1*2/4) for x, y in zip([0,0,139], [1,1,1])],'linestyle':'-'}
     # 计算均值
     temp_mean1 = temp_data1.mean(axis=1)
     shu_mean1 = shu_data1.mean(axis=1)
@@ -57,32 +65,34 @@ def plot_combined_temporal(ax, time_points, temp_data1, shu_data1, label1, temp_
     shu_mean2 = shu_data2.mean(axis=1)
     
     # 计算标准差（用于阴影区域）
-    temp_std1 = temp_data1.std(axis=1)
-    shu_std1 = shu_data1.std(axis=1)
-    temp_std2 = temp_data2.std(axis=1)
-    shu_std2 = shu_data2.std(axis=1)
+    temp_std1 = temp_data1.std(axis=1) / np.sqrt(temp_data1.shape[1])
+    shu_std1 = shu_data1.std(axis=1) / np.sqrt(temp_data1.shape[1])
+    temp_std2 = temp_data2.std(axis=1) / np.sqrt(temp_data1.shape[1])
+    shu_std2 = shu_data2.std(axis=1) / np.sqrt(temp_data1.shape[1])
     
     # 绘制File1的数据 - 实线
-    ax.plot(time_points, temp_mean1, label=f'{label1} Temporal', color='blue', linewidth=2)
+    ax.plot(time_points, temp_mean1, label=f'{label1} Temporal', color=f1['color'], linewidth=4)
+    ax.plot(time_points, temp_mean1, label=f'{label1} Temporal', color='white', linewidth=1.5)
     ax.fill_between(time_points, temp_mean1 - temp_std1, temp_mean1 + temp_std1, 
-                   alpha=0.2, color='blue')
+                   alpha=0.2, color=f1['color'])
     
     # 绘制File1的shuffle数据 - 虚线
-    ax.plot(time_points, shu_mean1, label=f'{label1} Shuffle', color='blue', 
+    ax.plot(time_points, shu_mean1, label=f'{label1} Shuffle', color=f1['color'], 
            linewidth=1.5, linestyle='--', alpha=0.8)
-    ax.fill_between(time_points, shu_mean1 - shu_std1, shu_mean1 + shu_std1, 
-                   alpha=0.1, color='blue')
+    # ax.fill_between(time_points, shu_mean1 - shu_std1, shu_mean1 + shu_std1, 
+    #                alpha=0.1, color=f1['color'])
     
     # 绘制File2的数据 - 实线
-    ax.plot(time_points, temp_mean2, label=f'{label2} Temporal', color='red', linewidth=2)
+    ax.plot(time_points, temp_mean2, label=f'{label2} Temporal', color=f2['color'], linewidth=2)
+    # ax.plot(time_points, temp_mean2, label=f'{label2} Temporal', color='white', linewidth=1.5)
     ax.fill_between(time_points, temp_mean2 - temp_std2, temp_mean2 + temp_std2, 
-                   alpha=0.2, color='red')
+                   alpha=0.2, color=f2['color'])
     
     # 绘制File2的shuffle数据 - 虚线
-    ax.plot(time_points, shu_mean2, label=f'{label2} Shuffle', color='red', 
+    ax.plot(time_points, shu_mean2, label=f'{label2} Shuffle', color=f2['color'], 
            linewidth=1.5, linestyle='--', alpha=0.8)
-    ax.fill_between(time_points, shu_mean2 - shu_std2, shu_mean2 + shu_std2, 
-                   alpha=0.1, color='red')
+    # ax.fill_between(time_points, shu_mean2 - shu_std2, shu_mean2 + shu_std2, 
+    #                alpha=0.1, color='red')
     
     # 标记显著性时间点（File1的temporal vs shuffle）
     sig_points1 = []
@@ -113,7 +123,7 @@ def plot_combined_temporal(ax, time_points, temp_data1, shu_data1, label1, temp_
         sig_y = y_min - 0.05 * y_range
         
         ax.scatter(sig_points1, [sig_y] * len(sig_points1), 
-                  color='blue', marker='^', s=30, label=f'{label1} sig (p<0.05)', alpha=0.7)
+                  color=f1['color'], marker='^', s=30, label=f'{label1} sig (p<0.05)', alpha=0.7)
     
     if sig_points2:
         y_min = min(temp_mean1.min(), shu_mean1.min(), temp_mean2.min(), shu_mean2.min())
@@ -121,22 +131,25 @@ def plot_combined_temporal(ax, time_points, temp_data1, shu_data1, label1, temp_
         sig_y = y_min - 0.08 * y_range
         
         ax.scatter(sig_points2, [sig_y] * len(sig_points2), 
-                  color='red', marker='v', s=30, label=f'{label2} sig (p<0.05)', alpha=0.7)
+                  color=f1['color'], marker='*', s=30, label=f'{label2} sig (p<0.05)', alpha=0.7)
     
     ax.set_title(title, fontsize=14, fontweight='bold')
-    ax.set_xlabel('时间点')
-    ax.set_ylabel('值')
-    ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
-    ax.grid(True, alpha=0.3)
+    ax.set_xlabel('time')
+    ax.set_ylabel('firing rate')
+
+    ax.grid(False)
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
     
-    # 添加统计信息
-    sig_info = f'{label1}: {len(sig_points1)}/{len(time_points)} 显著\n{label2}: {len(sig_points2)}/{len(time_points)} 显著'
-    ax.text(0.02, 0.98, sig_info, transform=ax.transAxes, fontsize=10, 
-           verticalalignment='top', bbox=dict(boxstyle="round,pad=0.3", facecolor="white", alpha=0.8))
+
 
 # 使用简洁版本
 # 使用示例
 file1 = "./sactemporal_batch2.xlsx"  # 第一个Excel文件
 file2 = "./sactemporal_batch3.xlsx"  # 第二个Excel文件，替换为实际路径
-
-simple_temporal_plot_combined(file1, file2)
+dt= 20 #ms
+stim1_on = 200 #ms
+stim_times = 1000 #ms
+stim_off = stim1_on+stim_times
+times_relate = {'stim_on':stim1_on,'stim_off':stim_off,'dt':dt,'stim_dur':stim_times}
+simple_temporal_plot_combined(file1, file2,times_relate)
