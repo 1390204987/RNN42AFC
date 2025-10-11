@@ -305,7 +305,7 @@ def list_files_in_directory(directory):
              if os.path.isfile(os.path.join(directory, file)) and file.endswith('.t7')]        
     return files
 
-filespath = './checkpoint_batchnew3'
+filespath = './checkpoint_batchnew4'
 # filespath = './check'
 nets = list_files_in_directory(filespath)
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -341,12 +341,12 @@ for net in nets:
     
     
 # 保存到Excel的两个不同sheet中
-with pd.ExcelWriter("./sacROC_batch3.xlsx") as writer:
+with pd.ExcelWriter("./sacROC_batch4.xlsx") as writer:
     df_L1.to_excel(writer, sheet_name='L1_sacROC', index=False)
     df_L2.to_excel(writer, sheet_name='L2_sacROC', index=False)
     
 # 保存到Excel的两个不同sheet中
-with pd.ExcelWriter("./sactemporal_batch3.xlsx") as writer:
+with pd.ExcelWriter("./sactemporal_batch4.xlsx") as writer:
     df_L1temporal.to_excel(writer, sheet_name='L1_sactemporal', index=False)
     df_L2temporal.to_excel(writer, sheet_name='L2_sactemporal', index=False)
     df_L1shu_temporal.to_excel(writer, sheet_name='shu_L1_sactemporal', index=False)

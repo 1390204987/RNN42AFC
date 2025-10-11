@@ -243,7 +243,7 @@ def neuralactivity_color_dm(model_dir,device,**kwargs):
     figname = 'saccade_div'
     # L1_sactime = plot_divergence(sacdir_list[select_0heading],neural_activity[:,select_0heading,:hidden1_size],
                                  # times_relate,rule_name,rule=rule,figname=figname,iarea=1,para=h1sac_para,doplot=0)
-    L1_sactime = plot_conditioned_divergence(sacdir_list,heading_per_trial,neural_activity[:,:,:hidden1_size],times_relate,rule_name,rule=rule,figname=figname,
+    L1_sactime,_,_ = plot_conditioned_divergence(sacdir_list,heading_per_trial,neural_activity[:,:,:hidden1_size],times_relate,rule_name,rule=rule,figname=figname,
                     iarea=1,para=h1sac_para,doplot=0)
 
 
@@ -251,10 +251,10 @@ def neuralactivity_color_dm(model_dir,device,**kwargs):
         # L2_sactime = plot_divergence(sacdir_list[select_0heading],neural_activity[:,select_0heading,hidden1_size:],
                                      # times_relate,rule_name,rule=rule,figname=figname,iarea=2,para=h2sac_para,doplot=0)
 
-        L2_sactime = plot_conditioned_divergence(sacdir_list,heading_per_trial,neural_activity[:,:,hidden1_size:],times_relate,rule_name,rule=rule,
+        L2_sactime,_,_ = plot_conditioned_divergence(sacdir_list,heading_per_trial,neural_activity[:,:,hidden1_size:],times_relate,rule_name,rule=rule,
                         figname=figname,iarea=2,para=h2sac_para,doplot=0)
 # 
-    L1_choicetime = plot_conditioned_divergence(choice_per_trial,heading_per_trial,neural_activity[:,:,:hidden1_size],times_relate,rule_name,rule=rule,
+    L1_choicetime,_,_ = plot_conditioned_divergence(choice_per_trial,heading_per_trial,neural_activity[:,:,:hidden1_size],times_relate,rule_name,rule=rule,
                                 figname=figname,iarea=1,para=h1abs_para,doplot=0)
     heading0_choice = choice_per_trial[select_0heading]
     heading0_h1_activity = neural_activity[:,select_0heading,:hidden1_size]
@@ -263,7 +263,7 @@ def neuralactivity_color_dm(model_dir,device,**kwargs):
                                     # rule_name,rule=rule,figname=figname,iarea=1,para=h1abs_para,doplot=0)
 
     if not hp.get("hidden_size2") is None:
-        L2_choicetime = plot_conditioned_divergence(choice_per_trial,heading_per_trial,neural_activity[:,:,hidden1_size:],times_relate,rule_name,rule=rule,
+        L2_choicetime,_,_ = plot_conditioned_divergence(choice_per_trial,heading_per_trial,neural_activity[:,:,hidden1_size:],times_relate,rule_name,rule=rule,
                                     figname=figname,iarea=2,para=h2abs_para,doplot=0)
         # L2_choicetime = plot_divergence(heading0_choice,heading0_h2_activity,times_relate,
                                         # rule_name,rule=rule,figname=figname,iarea=2,para=h2abs_para,doplot=0)
@@ -272,10 +272,11 @@ def neuralactivity_color_dm(model_dir,device,**kwargs):
     return L1_sactime,L2_sactime,L1_choicetime,L2_choicetime
         
 def list_files_in_directory(directory):
-    files = [file for file in os.listdir(directory) if os.path.isfile(os.path.join(directory, file))]        
+    files = [file for file in os.listdir(directory) 
+             if os.path.isfile(os.path.join(directory, file)) and file.endswith('.t7')]        
     return files
                       
-filespath = './checkpoint_batchnew3'
+filespath = './checkpoint_batchnew4'
 # filespath = './check'
 nets = list_files_in_directory(filespath)
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -297,5 +298,5 @@ for net in nets:
     })
     
     df = pd.concat([df, new_row], ignore_index=True)
-df.to_excel("./choice_divergence3_unsmooth.xlsx",index=False)
+df.to_excel("./choice_divergence4_unsmooth.xlsx",index=False)
     

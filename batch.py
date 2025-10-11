@@ -16,7 +16,7 @@ recur2 = np.linspace(0.1,1,num=5)
 # feedback_stren = np.linspace(0,1,num=10)
 # idnet = 5800
 # for i in range(len(recur1)):
-for i in [4]:
+for i in [0]:
     i_recur1 = recur1[i]
     # i_recur1 = 0.1
     # for ii in range(len(recur2)):
