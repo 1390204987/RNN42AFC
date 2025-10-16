@@ -207,8 +207,8 @@ def plot_variance_comparison(var_L1_f1, var_L2_f1, var_L1_f2, var_L2_f2):
         print(f"{name:<10} {np.mean(data):<12.6f} {np.std(data):<12.6f} {np.min(data):<12.6f} {np.max(data):<12.6f}")
 
 # 使用示例
-file1 = "./sacROC_batch3.xlsx"
-file2 = "./sacROC_batch2.xlsx"  # 替换为实际路径
+file1 = "./sacROC_batch4.xlsx"
+file2 = "./sacROC_batch3.xlsx"  # 替换为实际路径
 
 # 加载数据
 data_results = load_and_plot_separately(file1, file2)
