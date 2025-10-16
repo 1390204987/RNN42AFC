@@ -58,7 +58,7 @@ def _neuralactivity_dm(model_dir, rule, stim_mod, params_list, batch_shape,devic
     # hp['sigma_rec1']=0.1
     # hp['sigma_rec2']=0.1
     # # hp['fforwardstren']=0.1
-    # hp['fbackstren']=1
+    hp['fbackstren']=0
     # hp['sigma_x'] = 0.1,
     net = Net(hp,device,dt = hp['dt']).to(device)
     #remove prefixe "module"
@@ -276,7 +276,7 @@ def list_files_in_directory(directory):
              if os.path.isfile(os.path.join(directory, file)) and file.endswith('.t7')]        
     return files
                       
-filespath = './checkpoint_batchnew4'
+filespath = './checkpoint_batchnew2'
 # filespath = './check'
 nets = list_files_in_directory(filespath)
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -298,5 +298,5 @@ for net in nets:
     })
     
     df = pd.concat([df, new_row], ignore_index=True)
-df.to_excel("./choice_divergence4_unsmooth.xlsx",index=False)
+df.to_excel("./choice_divergence5_unsmooth.xlsx",index=False)
     
