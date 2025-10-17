@@ -40,7 +40,7 @@ def simple_temporal_plot_combined(file1, file2,times_relate):
     # 在stim1 on和off时间点画竖线
     ax1.axvline(x=0, color='gray', linestyle='--', alpha=0.7, label='Stim On')
     ax1.axvline(x=times_relate['stim_dur'], color='gray', linestyle='--', alpha=0.7, label='Stim Off')
-    # plt.savefig("./lunwenfigure/cutfeedback_training.svg")
+    plt.savefig("./lunwenfigure/cutfeedback_aftertrain.svg")
     
     fig, ax2 = plt.subplots(figsize=(8, 6))  # 创建图形和坐标轴
     # L2_sactemporal - 两个文件在同一坐标轴
@@ -145,8 +145,8 @@ def plot_combined_temporal(ax, time_points, temp_data1, shu_data1, label1, temp_
 
 # 使用简洁版本
 # 使用示例
-file1 = "./sactemporal_batch3.xlsx"  # 第一个Excel文件
-file2 = "./sactemporal_batch4.xlsx"  # 第二个Excel文件，替换为实际路径
+file1 = "./sactemporal_batch2.xlsx"  # 第一个Excel文件
+file2 = "./sactemporal_batch6.xlsx"  # 第二个Excel文件，替换为实际路径
 dt= 20 #ms
 stim1_on = 200 #ms
 stim_times = 1000 #ms
