@@ -155,120 +155,87 @@ def neuralactivity_color_dm(model_dir,device='cpu',**kwargs):
     
     stim1on_time = stim1_ons*dt
     stim1end_time = stim1on_time+stim1_times[0]
-    stim1_end = stim1end_time/dt
+    stim1_end = stim1end_time/dt-1
     n_input_heading = hp['n_input_heading']
     n_input_targcolor = hp['n_input_targcolor']
     n_input_rules = hp['n_input_rules']
     
     # Create a custom colormap: 0 → white, higher values → darker (e.g., blue/black)
-    colors = [(1, 1, 1), (0, 0, 0.5)]  # White to dark blue
+    colors = [(0.95, 0.95, 1), (0, 0, 0.5)]  # White to dark blue
     cmap = LinearSegmentedColormap.from_list('custom_cmap', colors, N=256)
+    plt.figure()
+    plt.imshow(x[:,selected_index,0:1].T,cmap=cmap)
+    plt.xticks(ticks=[0,stim1_ons,stim1_end,1750/dt-1])  
+        # 设置 y 轴只显示中间的刻度
+    plt.yticks([0])
+    set_figure()
+    plt.savefig("./lunwenfigure/fixationinput.svg")
     
     plt.figure()
-    plt.imshow(x[:,selected_index,: n_input_heading].T,cmap=cmap)
-    plt.xticks(ticks=[stim1_ons,stim1_end], labels=['stim1 on','stim1 end']) 
-
-    # Remove top and right spines
-    ax = plt.gca()
-    ax.spines['top'].set_visible(False)
-    ax.spines['right'].set_visible(False)    
-    # Optional: Keep bottom and left spines but make them thinner
-    ax.spines['bottom'].set_linewidth(0.5)
-    ax.spines['left'].set_linewidth(0.5)
-    ax.grid(False)
-    # 详细设置刻度线
-    ax.tick_params(axis='both', which='both', 
-                   bottom=True, top=False, 
-                   left=True, right=False,
-                   direction='out',         # 刻度线朝外
-                   length=3,               # 刻度线长度
-                   width=0.5)              # 刻度线宽度
-
+    plt.imshow(x[:,selected_index,1:n_input_heading].T,cmap=cmap)
+    plt.xticks(ticks=[0,stim1_ons,stim1_end,1750/dt-1]) 
+    # 设置 y 轴只显示中间的刻度
+    y_min, y_max = plt.ylim()
+    y_mid = (y_min + y_max) / 2
+    plt.yticks(ticks = [0,15,31])
+    set_figure()
     plt.savefig("./lunwenfigure/headinginput.svg")
     
     plt.figure()
-    plt.imshow(x[:,selected_index,n_input_heading:n_input_heading+n_input_targcolor].T,cmap=cmap)
-    plt.xticks(ticks=[stim1_ons,stim1_end], labels=['stim1 on','stim1 end']) 
-
-    # Remove top and right spines
-    ax = plt.gca()
-    ax.spines['top'].set_visible(False)
-    ax.spines['right'].set_visible(False)    
-    # Optional: Keep bottom and left spines but make them thinner
-    ax.spines['bottom'].set_linewidth(0.5)
-    ax.spines['left'].set_linewidth(0.5)
-    ax.grid(False)
-    # 详细设置刻度线
-    ax.tick_params(axis='both', which='both', 
-                   bottom=True, top=False, 
-                   left=True, right=False,
-                   direction='out',         # 刻度线朝外
-                   length=3,               # 刻度线长度
-                   width=0.5)              # 刻度线宽度
-    plt.savefig("./lunwenfigure/colorinput.svg")
+    plt.imshow(x[:,selected_index,n_input_heading:n_input_heading+int(n_input_targcolor/2)].T,cmap=cmap)
+    # plt.yticks(ticks=[0,end])
+    plt.xticks(ticks=[0,stim1_ons,stim1_end,1750/dt-1]) 
+    plt.yticks(ticks = [0,15,31])
+    set_figure()
+    plt.savefig("./lunwenfigure/colorinput1.svg")
+    
+    plt.figure()
+    plt.imshow(x[:,selected_index,(n_input_heading+int(n_input_targcolor/2)):(n_input_heading+n_input_targcolor)].T,cmap=cmap)
+    # plt.yticks(ticks=[0,end])
+    plt.xticks(ticks=[0,stim1_ons,stim1_end,1750/dt-1]) 
+    plt.yticks(ticks = [0,15,31])
+    set_figure()
+    plt.savefig("./lunwenfigure/colorinput2.svg")
     
     plt.figure()
     plt.imshow(x[:,selected_index,n_input_heading+n_input_targcolor:].T,cmap=cmap)
-    plt.xticks(ticks=[stim1_ons,stim1_end], labels=['stim1 on','stim1 end']) 
-
-    # Remove top and right spines
-    ax = plt.gca()
-    ax.spines['top'].set_visible(False)
-    ax.spines['right'].set_visible(False)    
-    # Optional: Keep bottom and left spines but make them thinner
-    ax.spines['bottom'].set_linewidth(0.5)
-    ax.spines['left'].set_linewidth(0.5)
-    ax.grid(False)
-    # 详细设置刻度线
-    ax.tick_params(axis='both', which='both', 
-                   bottom=True, top=False, 
-                   left=True, right=False,
-                   direction='out',         # 刻度线朝外
-                   length=3,               # 刻度线长度
-                   width=0.5)              # 刻度线宽度
+    plt.xticks(ticks=[0,stim1_ons,stim1_end-1,1750/dt-1]) 
+    set_figure()
     plt.savefig("./lunwenfigure/ruleinput.svg")
     
     plt.figure()
     plt.imshow(y[:,selected_index,:].T,cmap=cmap)
-    plt.xticks(ticks=[stim1_ons,stim1_end], labels=['stim1 on','stim1 end']) 
-
-    # Remove top and right spines
-    ax = plt.gca()
-    ax.spines['top'].set_visible(False)
-    ax.spines['right'].set_visible(False)    
-    # Optional: Keep bottom and left spines but make them thinner
-    ax.spines['bottom'].set_linewidth(0.5)
-    ax.spines['left'].set_linewidth(0.5)
-    ax.grid(False)
-    # 详细设置刻度线
-    ax.tick_params(axis='both', which='both', 
-                   bottom=True, top=False, 
-                   left=True, right=False,
-                   direction='out',         # 刻度线朝外
-                   length=3,               # 刻度线长度
-                   width=0.5)              # 刻度线宽度
+    plt.xticks(ticks=[0,stim1_ons,stim1_end,1750/dt-1]) 
+    plt.yticks(ticks = [0,8,16])
+    set_figure()
     plt.savefig("./lunwenfigure/expectoutput.svg")
     
     plt.figure()
     plt.imshow(y_hat[:,selected_index,:].T,cmap=cmap)
-    plt.xticks(ticks=[stim1_ons,stim1_end], labels=['stim1 on','stim1 end']) 
-
+    plt.xticks(ticks=[0,stim1_ons,stim1_end,1750/dt-1]) 
+    plt.yticks(ticks = [0,8,16])
+    set_figure()
+    plt.savefig("./lunwenfigure/realoutput.svg")
+    
+def set_figure():
     # Remove top and right spines
     ax = plt.gca()
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)    
     # Optional: Keep bottom and left spines but make them thinner
-    ax.spines['bottom'].set_linewidth(0.5)
-    ax.spines['left'].set_linewidth(0.5)
+    ax.spines['bottom'].set_linewidth(2.5)
+    ax.spines['left'].set_linewidth(2.5)
     ax.grid(False)
     # 详细设置刻度线
     ax.tick_params(axis='both', which='both', 
                    bottom=True, top=False, 
                    left=True, right=False,
                    direction='out',         # 刻度线朝外
-                   length=3,               # 刻度线长度
-                   width=0.5)              # 刻度线宽度
-    plt.savefig("./lunwenfigure/realoutput.svg")
+                   length=5,               # 刻度线长度
+                   width=1.5)              # 刻度线宽度
+    
+    
+    
 for i in [0]:
     figname_suffix = f'checkgpu/{i}'
     # model_dir = './checkpoint/checkrelu.t7'         
@@ -276,3 +243,6 @@ for i in [0]:
     # device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     device = "cpu"
     neuralactivity_color_dm(model_dir,device=device,figname_append=figname_suffix) 
+    
+    
+    

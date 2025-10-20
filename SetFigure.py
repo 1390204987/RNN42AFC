@@ -15,16 +15,24 @@ def SetFigure(size=20):
 
     # Set font sizes for all text elements
     for ax in fig.get_axes():
-        ax.tick_params(direction='out', length=6, width=1.5)
+        # ax.tick_params(direction='out', length=6, width=1.5)
         ax.set_facecolor('none')  # Set axes background to transparent
         ax.spines['top'].set_visible(False)
         ax.spines['right'].set_visible(False)
         ax.spines['bottom'].set_linewidth(1.5)
         ax.spines['left'].set_linewidth(1.5)
+        ax.spines['bottom'].set_color('black')
+        ax.spines['left'].set_color('black')
         ax.title.set_fontsize(size)
         ax.xaxis.label.set_fontsize(size)
         ax.yaxis.label.set_fontsize(size)
         ax.tick_params(labelsize=size)
+        ax.tick_params(axis='both', which='both', 
+                       bottom=True, top=False, 
+                       left=True, right=False,
+                       direction='out',         # 刻度线朝外
+                       length=5,               # 刻度线长度
+                       width=1.5)              # 刻度线宽度
 
     # Set error bar cap size (for errorbar plots)
     for line in fig.findobj(match=plt.Line2D):

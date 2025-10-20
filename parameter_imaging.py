@@ -5,6 +5,7 @@ for find the proper parameter visually
 @author: NaN
 """
 import pandas as pd
+import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import cm
 from matplotlib.colors import Normalize
@@ -19,8 +20,8 @@ df = pd.read_excel("./choice_divergence1_unsmooth.xlsx",engine='openpyxl')
 # show_para = "fack_l1choicetime"
 # show_para = "fack_l2sactime"
 # show_para = "fack_l1sactime"
-# show_para = "delta_sac"
-show_para = "delta_abs"
+show_para = "delta_sac"
+# show_para = "delta_abs"
 # show_para = "deltaabs_sac"
 imagingdata = df[show_para]
 # imagingdata = df['layer2noisecorr']
@@ -82,6 +83,10 @@ fig, axs = plt.subplots(5, 5, figsize=(5, 5),
 
 # 在每个 (Z, J) 位置添加子图, axs[0, 0] → 左上角 的子图（第 0 行，第 0 列）。axs[2, 5] → 第 2 行，第 5 列 的子图。axs[9, 9] → 右下角 的子图（第 9 行，第 9 列）。
 
+# 创建两个5x5的矩阵来存储比例
+positive_ratio_matrix = np.zeros((5, 5))
+negative_ratio_matrix = np.zeros((5, 5))
+
 for z in [0, 1, 2, 3, 4]:
     for j in [0, 1, 2, 3, 4]:
         ax_sub = axs[z, j]
@@ -89,6 +94,19 @@ for z in [0, 1, 2, 3, 4]:
 
         # 获取对应 (Z, J) 的数据
         subset_df = df[(df['Z'] == z) & (df['J'] == j)]
+        
+        # 统计大于0和小于0的比例
+        total_count = len(subset_df)
+        if total_count > 0:
+            positive_ratio = len(subset_df[subset_df[show_para] > 0]) / total_count
+            negative_ratio = len(subset_df[subset_df[show_para] < 0]) / total_count
+        else:
+            positive_ratio = 0
+            negative_ratio = 0
+        
+        # 存储到矩阵中
+        positive_ratio_matrix[z, j] = positive_ratio
+        negative_ratio_matrix[z, j] = negative_ratio
 
         # 绘制子图
         scatter_sub = ax_sub.scatter(subset_df['X'], subset_df['Y'], c=subset_df[show_para], cmap=cmap, s=20, norm=norm)
@@ -126,12 +144,16 @@ valid_data_joverz = df[[show_para, 'J_over_Z']].dropna()
 
 if len(valid_data_j) > 0:
     corr_j, p_j = pearsonr(valid_data_j[show_para], valid_data_j['J_replaced'])
+    corr_j2,p_j2 = pearsonr(np.mean(positive_ratio_matrix,axis=0), np.unique(valid_data_j['J_replaced']))
+    corr_j3,p_j3 = pearsonr(np.mean(negative_ratio_matrix,axis=0), np.unique(valid_data_j['J_replaced']))
     # print(f"Pearson 相关性 (J): {corr_j:.3f}", f"P 值: {p_j:.4f}")
 else:
     print("J 数据全为 NaN")
 
 if len(valid_data_z) > 0:
     corr_z, p_z = pearsonr(valid_data_z[show_para], valid_data_z['Z_replaced'])
+    corr_z2, p_z2 = pearsonr(np.mean(positive_ratio_matrix,axis=1), np.unique(valid_data_z['Z_replaced']))
+    corr_z3, p_z3 = pearsonr(np.mean(negative_ratio_matrix,axis=1), np.unique(valid_data_z['Z_replaced']))
     # print(f"Pearson 相关性 (Z): {corr_z:.3f}", f"P 值: {p_z:.4f}")
 else:
     print("Z 数据全为 NaN")
@@ -154,6 +176,12 @@ def format_p_value(p):
 print(f"Pearson 相关性 (J): {corr_j:.2f}", f"P 值: {format_p_value(p_j)}")
 print(f"Pearson 相关性 (Z): {corr_z:.2f}", f"P 值: {format_p_value(p_z)}")
 print(f"Pearson 相关性 (joverZ): {corr_joverz:.2f}", f"P 值: {format_p_value(p_joverz)}")
+
+print(f"Pearson 相关性 (J): {corr_j2:.2f}", f"P 值: {format_p_value(p_j2)}")
+print(f"Pearson 相关性 (Z): {corr_z2:.2f}", f"P 值: {format_p_value(p_z2)}")
+
+print(f"Pearson 相关性 (J): {corr_j3:.2f}", f"P 值: {format_p_value(p_j3)}")
+print(f"Pearson 相关性 (Z): {corr_z3:.2f}", f"P 值: {format_p_value(p_z3)}")
 
 # 显示图形
 plt.show()
