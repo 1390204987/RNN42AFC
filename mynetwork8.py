@@ -153,8 +153,8 @@ class ReadinLinear(nn.Module):
         
         mask11 = np.ones((hidden_size1,in_feature_heading))
         mask12 = np.zeros((hidden_size2,in_feature_heading))
-        mask21 = np.zeros((hidden_size1,in_feature_targcolor)) 
-        mask22 = np.ones((hidden_size2,in_feature_targcolor)) 
+        mask21 = np.ones((hidden_size1,in_feature_targcolor)) 
+        mask22 = np.zeros((hidden_size2,in_feature_targcolor)) 
         mask31 = np.zeros((hidden_size1,in_feature_rules))
         mask32 = np.ones((hidden_size2,in_feature_rules))
         mask1 = np.concatenate((mask11,mask21,mask31),axis=1)
@@ -316,6 +316,7 @@ class Net(nn.Module):
         # self.device = torch.device("cpu")
         self.device = device
         self.seed = hp["seed"]
+        # self.seed = 3
         self.rnn = EIRNN(self.device,insize_heading,insize_targcolor,insize_rules,
                           hidden_size1, hidden_size2,n_rule,n_eachring,num_ring,recur1,recur2,fforwardstren,fbackstren,
                          sigma_feedforward,sigma_feedback,L1_tau,L2_tau,sigma_rec1=sigma_rec1,sigma_rec2=sigma_rec2,

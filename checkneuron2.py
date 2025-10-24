@@ -77,7 +77,7 @@ def _neuralactivity_dm(model_dir, rule, stim_mod, params_list, batch_shape,devic
     # hp['sigma_rec1']=0.1
     # hp['sigma_rec2']=0.1
     # hp['fforwardstren']=1
-    # hp['fbackstren']=1
+    hp['fbackstren']=0
     # hp['sigma_x'] = 0.1,
     net = Net(hp,device,dt = hp['dt']).to(device)
     #remove prefixe "module"
@@ -652,9 +652,9 @@ def plot_corr_heading_color_sac(heading_selectivity,saccade_selectivity,color_se
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 for i in [0]:
     figname_suffix = f'checkgpu/{i}'
-    # model_dir = './checkpoint/checkrelu.t7'        
+    model_dir = './checkpoint/color2h1.t7'        
     # model_dir = './checkpoint/onlyfeedforward.t7'      
-    model_dir = './checkpoint_batchnew1/4411colorhdnet8.t7'     
+    # model_dir = './checkpoint_batchnew1/4411colorhdnet8.t7'     
     # model_dir = './checkpoint_scaled/4411colorhdnet8_feedback_x2.t7'  
     # model_dir = 'I:/model/data_simulation/neuralactivityinputtask/checkpoint_batchnew1/0421colorhdnet4.t7'
     neuralactivity_color_dm(model_dir,device,figname_append=figname_suffix) 

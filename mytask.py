@@ -188,6 +188,7 @@ class Trial(object):
         # Generate noise directly on GPU
         noise_shape = ((self.off - self.on)//1, self.batch_size, n_heading - 1)
         seed=config["seed"]
+        # seed = 3
         generator = torch.Generator(device=self.device)
         generator.manual_seed(seed)
         x_noise = torch.randn(*noise_shape, device=self.device, generator=generator)* self._sigma_x
