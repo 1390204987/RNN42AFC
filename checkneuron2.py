@@ -73,11 +73,11 @@ def _neuralactivity_dm(model_dir, rule, stim_mod, params_list, batch_shape,devic
     modelparams = torch.load(model_dir,weights_only=False)
     state_dict = modelparams["state_dict"]
     hp = modelparams["hp"]
-    # hp["sigma_x"] = 0.1
-    # hp['sigma_rec1']=0.1
-    # hp['sigma_rec2']=0.1
+    hp["sigma_x"] = 0.001
+    hp['sigma_rec1']=0.3
+    hp['sigma_rec2']=0.3
     # hp['fforwardstren']=1
-    hp['fbackstren']=0
+    # hp['fbackstren']=0
     # hp['sigma_x'] = 0.1,
     net = Net(hp,device,dt = hp['dt']).to(device)
     #remove prefixe "module"
@@ -589,22 +589,22 @@ def neuralactivity_color_dm(model_dir,device,**kwargs):
     plt.figure(figsize=(10, 6))
     figname = 'choice_div'
     plt.title('choice_div')
-    L1_choicetime = plot_conditioned_divergence(choice_per_trial,heading_per_trial,neural_activity[:,:,:hidden1_size],times_relate,rule_name,rule=rule,
-                                figname=figname,figname_append = kwargs['figname_append'],iarea=1,para=h1abs_para,doplot=1)
+    # L1_choicetime = plot_conditioned_divergence(choice_per_trial,heading_per_trial,neural_activity[:,:,:hidden1_size],times_relate,rule_name,rule=rule,
+                                # figname=figname,figname_append = kwargs['figname_append'],iarea=1,para=h1abs_para,doplot=1)
     heading0_choice = choice_per_trial[select_0heading]
     heading0_h1_activity = neural_activity[:,select_0heading,:hidden1_size]
     heading0_h2_activity = neural_activity[:,select_0heading,hidden1_size:]
-    # plot_divergence(heading0_choice,heading0_h1_activity,times_relate,rule_name,rule=rule,
-                    # figname=figname,figname_append = kwargs['figname_append'],iarea=1,para=h1abs_para,doplot=1)
+    plot_divergence(heading0_choice,heading0_h1_activity,times_relate,rule_name,rule=rule,
+                    figname=figname,figname_append = kwargs['figname_append'],iarea=1,para=h1abs_para,doplot=1)
     SetFigure(15)
     plt.show()
-    L1_choicetime = get_divergence(heading0_choice,heading0_h1_activity,times_relate,rule_name,rule=rule,
-                                   figname=figname,figname_append = kwargs['figname_append'],iarea=1,para=h1abs_para,doplot=1)
+    # L1_choicetime = get_divergence(heading0_choice,heading0_h1_activity,times_relate,rule_name,rule=rule,
+                                   # figname=figname,figname_append = kwargs['figname_append'],iarea=1,para=h1abs_para,doplot=1)
     if not hp.get("hidden_size2") is None:
-        L2_choicetime = plot_conditioned_divergence(choice_per_trial,heading_per_trial,neural_activity[:,:,hidden1_size:],times_relate,rule_name,rule=rule,
-                                    figname=figname,figname_append = kwargs['figname_append'],iarea=2,para=h2abs_para,doplot=1)
-        # plot_divergence(heading0_choice,heading0_h2_activity,times_relate,rule_name,rule=rule,
-                        # figname=figname,figname_append = kwargs['figname_append'],iarea=2,para=h2abs_para,doplot=1)
+        # L2_choicetime = plot_conditioned_divergence(choice_per_trial,heading_per_trial,neural_activity[:,:,hidden1_size:],times_relate,rule_name,rule=rule,
+                                    # figname=figname,figname_append = kwargs['figname_append'],iarea=2,para=h2abs_para,doplot=1)
+        plot_divergence(heading0_choice,heading0_h2_activity,times_relate,rule_name,rule=rule,
+                        figname=figname,figname_append = kwargs['figname_append'],iarea=2,para=h2abs_para,doplot=1)
         SetFigure(15)
         plt.show()
         # L2_choicetime = get_divergence(heading0_choice,heading0_h2_activity,times_relate,rule_name,rule=rule,figname=figname,
@@ -652,7 +652,8 @@ def plot_corr_heading_color_sac(heading_selectivity,saccade_selectivity,color_se
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 for i in [0]:
     figname_suffix = f'checkgpu/{i}'
-    model_dir = './checkpoint/color2h1.t7'        
+    model_dir = './checkpoint/color2h12.t7'     
+    # model_dir = './checkpoint_color2h1/0031colorhdnet8.t7'
     # model_dir = './checkpoint/onlyfeedforward.t7'      
     # model_dir = './checkpoint_batchnew1/4411colorhdnet8.t7'     
     # model_dir = './checkpoint_scaled/4411colorhdnet8_feedback_x2.t7'  

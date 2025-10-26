@@ -20,7 +20,7 @@ for i in [0]:
     i_recur1 = recur1[i]
     # i_recur1 = 0.1
     # for ii in range(len(recur2)):
-    for ii in [4]:
+    for ii in [3]:
         ii_recur2 = recur2[ii]
         # ii_recur2 = 1
 
@@ -40,7 +40,7 @@ for i in [0]:
                 hp["seed"] = random_num
                 formatted_idnet = str(idnet).zfill(4)
                 netname = formatted_idnet+'colorhdnet8'     
-                savepath = './checkpoint_batchnew3/'
+                savepath = './checkpoint_color2h1/'
                 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
                 # device = torch.device("cpu")
                 # train(netname, savepath, device, ruleset = 'coltargdm')
