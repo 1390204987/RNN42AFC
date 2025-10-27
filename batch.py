@@ -20,7 +20,7 @@ for i in [0]:
     i_recur1 = recur1[i]
     # i_recur1 = 0.1
     # for ii in range(len(recur2)):
-    for ii in [3]:
+    for ii in [0]:
         ii_recur2 = recur2[ii]
         # ii_recur2 = 1
 
@@ -34,7 +34,7 @@ for i in [0]:
                 hp["recur1"] = i_recur1
                 hp["recur2"] = ii_recur2 
                 hp["fforwardstren"] = 1
-                hp["fbackstren"] = 0   
+                hp["fbackstren"] = 1   
                 # hp['sigma_rec1'] = noise1[i]
                 # hp['sigma_rec2'] = noise2[ii]
                 hp["seed"] = random_num
