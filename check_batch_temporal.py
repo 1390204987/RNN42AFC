@@ -66,7 +66,7 @@ def _neuralactivity_dm(model_dir, rule, stim_mod, params_list, batch_shape,devic
     # hp['sigma_rec1']=0.1
     # hp['sigma_rec2']=0.1
     # # hp['fforwardstren']=0.1
-    hp['fbackstren']=0
+    # hp['fbackstren']=0
     # hp['sigma_x'] = 0.1,
     net = Net(hp,device,dt = hp['dt']).to(device)
     #remove prefixe "module"
@@ -259,14 +259,14 @@ def neuralactivity_color_dm(model_dir,device,**kwargs):
         L2_sactime,L2_sactemporal,L2_shuffle_sac = plot_conditioned_divergence(sacdir_list,heading_per_trial,neural_activity[:,:,hidden1_size:],times_relate,rule_name,rule=rule,
                         figname=figname,iarea=2,para=h2sac_para,doplot=0)
 # 
-    L1_choicetime,_,_ = plot_conditioned_divergence(choice_per_trial,heading_per_trial,neural_activity[:,:,:hidden1_size],times_relate,rule_name,rule=rule,
+    L1_choicetime,L1_choicetemporal,L1_shuffle_choice = plot_conditioned_divergence(choice_per_trial,heading_per_trial,neural_activity[:,:,:hidden1_size],times_relate,rule_name,rule=rule,
                                 figname=figname,iarea=1,para=h1abs_para,doplot=0)
     heading0_choice = choice_per_trial[select_0heading]
     heading0_h1_activity = neural_activity[:,select_0heading,:hidden1_size]
     heading0_h2_activity = neural_activity[:,select_0heading,hidden1_size:]
 
     if not hp.get("hidden_size2") is None:
-        L2_choicetime,_,_ = plot_conditioned_divergence(choice_per_trial,heading_per_trial,neural_activity[:,:,hidden1_size:],times_relate,rule_name,rule=rule,
+        L2_choicetime,L2_choicetemporal,L2_shuffle_choice = plot_conditioned_divergence(choice_per_trial,heading_per_trial,neural_activity[:,:,hidden1_size:],times_relate,rule_name,rule=rule,
                                     figname=figname,iarea=2,para=h2abs_para,doplot=0)
 
     stim_times = np.array(stim_times)
@@ -298,14 +298,15 @@ def neuralactivity_color_dm(model_dir,device,**kwargs):
     L1_sacROC = ROC_sac[:hidden1_size] 
     L2_sacROC = ROC_sac[hidden1_size:]
     
-    return L1_sacROC,L2_sacROC,L1_sactemporal,L2_sactemporal,L1_shuffle_sac,L2_shuffle_sac
+    # return L1_sacROC,L2_sacROC,L1_sactemporal,L2_sactemporal,L1_shuffle_sac,L2_shuffle_sac
+    return L1_choicetemporal,L2_choicetemporal,L1_shuffle_choice,L2_shuffle_choice
 
 def list_files_in_directory(directory):
     files = [file for file in os.listdir(directory) 
              if os.path.isfile(os.path.join(directory, file)) and file.endswith('.t7')]        
     return files
 
-filespath = './checkpoint_batchnew2_1'
+filespath = './checkpoint_batchnew2'
 # filespath = './check'
 nets = list_files_in_directory(filespath)
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -323,38 +324,55 @@ df_L2shu_temporal = pd.DataFrame()
 
 for net in nets:
     model_dir = filespath + '/' + net
-    L1_sacROC, L2_sacROC,L1_sactemporal,L2_sactemporal,L1_shuffle_sac,L2_shuffle_sac = neuralactivity_color_dm(model_dir, device)
+    # L1_sacROC, L2_sacROC,L1_sactemporal,L2_sactemporal,L1_shuffle_sac,L2_shuffle_sac = neuralactivity_color_dm(model_dir, device)
+    L1_choicetemporal,L2_choicetemporal,L1_shuffle_choice,L2_shuffle_choice = neuralactivity_color_dm(model_dir, device)
     numbersinnetname = re.findall(r'\d+', net)
     netid = numbersinnetname[0]
     
     # 为每个net创建列名
     col_name = f"net_{netid}"
     
-    # 将L1_sacROC和L2_sacROC分别保存为DataFrame的列
-    df_L1[col_name] = L1_sacROC
-    df_L2[col_name] = L2_sacROC
+    # # 将L1_sacROC和L2_sacROC分别保存为DataFrame的列
+    # df_L1[col_name] = L1_sacROC
+    # df_L2[col_name] = L2_sacROC
+    # # 将L1_temporal和L2_temporal分别保存为DataFrame的列
+    # df_L1temporal[col_name] = L1_sactemporal
+    # df_L2temporal[col_name] = L2_sactemporal
+    # df_L1shu_temporal[col_name] = L1_shuffle_sac
+    # df_L2shu_temporal[col_name] = L2_shuffle_sac
+    
     # 将L1_temporal和L2_temporal分别保存为DataFrame的列
-    df_L1temporal[col_name] = L1_sactemporal
-    df_L2temporal[col_name] = L2_sactemporal
-    df_L1shu_temporal[col_name] = L1_shuffle_sac
-    df_L2shu_temporal[col_name] = L2_shuffle_sac
+    df_L1temporal[col_name] = L1_choicetemporal
+    df_L2temporal[col_name] = L2_choicetemporal
+    df_L1shu_temporal[col_name] = L1_shuffle_choice
+    df_L2shu_temporal[col_name] = L2_shuffle_choice    
     
+    
+    
+# # 保存到Excel的两个不同sheet中
+# with pd.ExcelWriter("./sacROC_batch6.xlsx") as writer:
+#     df_L1.to_excel(writer, sheet_name='L1_sacROC', index=False)
+#     df_L2.to_excel(writer, sheet_name='L2_sacROC', index=False)
+    
+# # 保存到Excel的两个不同sheet中
+# with pd.ExcelWriter("./sactemporal_batch6.xlsx") as writer:
+#     df_L1temporal.to_excel(writer, sheet_name='L1_sactemporal', index=False)
+#     df_L2temporal.to_excel(writer, sheet_name='L2_sactemporal', index=False)
+#     df_L1shu_temporal.to_excel(writer, sheet_name='shu_L1_sactemporal', index=False)
+#     df_L2shu_temporal.to_excel(writer, sheet_name='shu_L2_sactemporal', index=False)
     
 # 保存到Excel的两个不同sheet中
-with pd.ExcelWriter("./sacROC_batch6.xlsx") as writer:
-    df_L1.to_excel(writer, sheet_name='L1_sacROC', index=False)
-    df_L2.to_excel(writer, sheet_name='L2_sacROC', index=False)
+with pd.ExcelWriter("./choicetemporal_batch2.xlsx") as writer:
+    df_L1temporal.to_excel(writer, sheet_name='L1_chocietemporal', index=False)
+    df_L2temporal.to_excel(writer, sheet_name='L2_chocietemporal', index=False)
+    df_L1shu_temporal.to_excel(writer, sheet_name='shu_L1_choicetemporal', index=False)
+    df_L2shu_temporal.to_excel(writer, sheet_name='shu_L2_choicetemporal', index=False)    
     
-# 保存到Excel的两个不同sheet中
-with pd.ExcelWriter("./sactemporal_batch6.xlsx") as writer:
-    df_L1temporal.to_excel(writer, sheet_name='L1_sactemporal', index=False)
-    df_L2temporal.to_excel(writer, sheet_name='L2_sactemporal', index=False)
-    df_L1shu_temporal.to_excel(writer, sheet_name='shu_L1_sactemporal', index=False)
-    df_L2shu_temporal.to_excel(writer, sheet_name='shu_L2_sactemporal', index=False)
+    
 
 print(f"保存完成！")
-print(f"L1_sacROC sheet: {df_L1.shape[1]}个net, 每个net {df_L1.shape[0]}个值")
-print(f"L2_sacROC sheet: {df_L2.shape[1]}个net, 每个net {df_L2.shape[0]}个值")
+# print(f"L1_sacROC sheet: {df_L1.shape[1]}个net, 每个net {df_L1.shape[0]}个值")
+# print(f"L2_sacROC sheet: {df_L2.shape[1]}个net, 每个net {df_L2.shape[0]}个值")
 
 
 
