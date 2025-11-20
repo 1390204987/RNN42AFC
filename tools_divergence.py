@@ -133,13 +133,19 @@ def plot_divergence(var_list, neural_activity, times_relate, rule_name, figname,
         select_none = var_list == none
 
         align_markers = [trial_start, trial_end]
-        t_centers,step_size,neural_act_smooth = guass_smooth(align_markers, neural_activity[:, :, iunit])
-        base = np.mean(neural_act_smooth, axis=1, keepdims=True)
-        gain = np.std(neural_act_smooth, keepdims=True) + 1e-6
-        z_neural_activity.append ((neural_act_smooth - base) / gain)
+        
+        # t_centers,step_size,neural_act_smooth = guass_smooth(align_markers, neural_activity[:, :, iunit])
+        # base = np.mean(neural_act_smooth, axis=1, keepdims=True)
+        # gain = np.std(neural_act_smooth, keepdims=True) + 1e-6
+        # z_neural_activity.append ((neural_act_smooth - base) / gain)
+        
+        step_size = 20
+        t_centers = np.arange(trial_start, trial_end+step_size,step_size)
+        z_neural_activity = neural_activity
 
         prefer_zactivity.append(z_neural_activity[iunit][:, select_prefer])
         none_zactivity.append(z_neural_activity[iunit][:, select_none])
+
 
     divergence = np.full([unit_num,len(t_centers)], np.nan)
     for iunit in range(unit_num):
@@ -251,7 +257,7 @@ def plot_divergence(var_list, neural_activity, times_relate, rule_name, figname,
         
         os.makedirs(pathname,exist_ok=True)
         plt.savefig(figname+'.png', transparent=True) 
-    return start_time
+    return start_time,meandivergence,meandivergence_shuffle_avg
 def plot_conditioned_divergence(var_list1,var_list2,neural_activity,times_relate,rule_name,figname,iarea,**kwargs):
     plot_para = kwargs.get('para', {})
     doplot = kwargs.get('doplot')

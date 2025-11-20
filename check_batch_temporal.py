@@ -298,8 +298,8 @@ def neuralactivity_color_dm(model_dir,device,**kwargs):
     L1_sacROC = ROC_sac[:hidden1_size] 
     L2_sacROC = ROC_sac[hidden1_size:]
     
-    # return L1_sacROC,L2_sacROC,L1_sactemporal,L2_sactemporal,L1_shuffle_sac,L2_shuffle_sac
-    return L1_choicetemporal,L2_choicetemporal,L1_shuffle_choice,L2_shuffle_choice
+    return L1_sacROC,L2_sacROC,L1_sactemporal,L2_sactemporal,L1_shuffle_sac,L2_shuffle_sac
+    # return L1_choicetemporal,L2_choicetemporal,L1_shuffle_choice,L2_shuffle_choice
 
 def list_files_in_directory(directory):
     files = [file for file in os.listdir(directory) 
@@ -324,32 +324,32 @@ df_L2shu_temporal = pd.DataFrame()
 
 for net in nets:
     model_dir = filespath + '/' + net
-    # L1_sacROC, L2_sacROC,L1_sactemporal,L2_sactemporal,L1_shuffle_sac,L2_shuffle_sac = neuralactivity_color_dm(model_dir, device)
-    # if np.all(np.isnan(L1_sactemporal)):
-        # continue
-    L1_choicetemporal,L2_choicetemporal,L1_shuffle_choice,L2_shuffle_choice = neuralactivity_color_dm(model_dir, device)
-    if np.all(np.isnan(L1_choicetemporal)):
+    L1_sacROC, L2_sacROC,L1_sactemporal,L2_sactemporal,L1_shuffle_sac,L2_shuffle_sac = neuralactivity_color_dm(model_dir, device)
+    if np.all(np.isnan(L1_sactemporal)):
         continue
+    # L1_choicetemporal,L2_choicetemporal,L1_shuffle_choice,L2_shuffle_choice = neuralactivity_color_dm(model_dir, device)
+    # if np.all(np.isnan(L1_choicetemporal)):
+    #     continue
     numbersinnetname = re.findall(r'\d+', net)
     netid = numbersinnetname[0]
     
     # 为每个net创建列名
     col_name = f"net_{netid}"
     
-    # # 将L1_sacROC和L2_sacROC分别保存为DataFrame的列
-    # df_L1[col_name] = L1_sacROC
-    # df_L2[col_name] = L2_sacROC
-    # # 将L1_temporal和L2_temporal分别保存为DataFrame的列
-    # df_L1temporal[col_name] = L1_sactemporal
-    # df_L2temporal[col_name] = L2_sactemporal
-    # df_L1shu_temporal[col_name] = L1_shuffle_sac
-    # df_L2shu_temporal[col_name] = L2_shuffle_sac
-    
+    # 将L1_sacROC和L2_sacROC分别保存为DataFrame的列
+    df_L1[col_name] = L1_sacROC
+    df_L2[col_name] = L2_sacROC
     # 将L1_temporal和L2_temporal分别保存为DataFrame的列
-    df_L1temporal[col_name] = L1_choicetemporal
-    df_L2temporal[col_name] = L2_choicetemporal
-    df_L1shu_temporal[col_name] = L1_shuffle_choice
-    df_L2shu_temporal[col_name] = L2_shuffle_choice    
+    df_L1temporal[col_name] = L1_sactemporal
+    df_L2temporal[col_name] = L2_sactemporal
+    df_L1shu_temporal[col_name] = L1_shuffle_sac
+    df_L2shu_temporal[col_name] = L2_shuffle_sac
+    
+    # # 将L1_temporal和L2_temporal分别保存为DataFrame的列
+    # df_L1temporal[col_name] = L1_choicetemporal
+    # df_L2temporal[col_name] = L2_choicetemporal
+    # df_L1shu_temporal[col_name] = L1_shuffle_choice
+    # df_L2shu_temporal[col_name] = L2_shuffle_choice    
     
     
     
@@ -358,19 +358,19 @@ for net in nets:
 #     df_L1.to_excel(writer, sheet_name='L1_sacROC', index=False)
 #     df_L2.to_excel(writer, sheet_name='L2_sacROC', index=False)
     
-# # 保存到Excel的两个不同sheet中
-# with pd.ExcelWriter("./sactemporal_batch2_2cut.xlsx") as writer:
-#     df_L1temporal.to_excel(writer, sheet_name='L1_sactemporal', index=False)
-#     df_L2temporal.to_excel(writer, sheet_name='L2_sactemporal', index=False)
-#     df_L1shu_temporal.to_excel(writer, sheet_name='shu_L1_sactemporal', index=False)
-#     df_L2shu_temporal.to_excel(writer, sheet_name='shu_L2_sactemporal', index=False)
+# 保存到Excel的两个不同sheet中
+with pd.ExcelWriter("./sactemporal_batch2cut.xlsx") as writer:
+    df_L1temporal.to_excel(writer, sheet_name='L1_sactemporal', index=False)
+    df_L2temporal.to_excel(writer, sheet_name='L2_sactemporal', index=False)
+    df_L1shu_temporal.to_excel(writer, sheet_name='shu_L1_sactemporal', index=False)
+    df_L2shu_temporal.to_excel(writer, sheet_name='shu_L2_sactemporal', index=False)
     
 # 保存到Excel的两个不同sheet中
-with pd.ExcelWriter("./choicetemporal_batch2cut.xlsx") as writer:
-    df_L1temporal.to_excel(writer, sheet_name='L1_chocietemporal', index=False)
-    df_L2temporal.to_excel(writer, sheet_name='L2_chocietemporal', index=False)
-    df_L1shu_temporal.to_excel(writer, sheet_name='shu_L1_choicetemporal', index=False)
-    df_L2shu_temporal.to_excel(writer, sheet_name='shu_L2_choicetemporal', index=False)    
+# with pd.ExcelWriter("./choicetemporal_batch2cut.xlsx") as writer:
+#     df_L1temporal.to_excel(writer, sheet_name='L1_chocietemporal', index=False)
+#     df_L2temporal.to_excel(writer, sheet_name='L2_chocietemporal', index=False)
+#     df_L1shu_temporal.to_excel(writer, sheet_name='shu_L1_choicetemporal', index=False)
+#     df_L2shu_temporal.to_excel(writer, sheet_name='shu_L2_choicetemporal', index=False)    
     
     
 

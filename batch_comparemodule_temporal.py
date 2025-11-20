@@ -155,7 +155,7 @@ def plot_combined_temporal(ax, time_points, temp_data1, shu_data1, label1, temp_
     
 # 使用简洁版本
 # 使用示例
-file1 = "./sactemporal_batch2_2.xlsx"  # 第一个Excel文件
+file1 = "./sactemporal_batch2.xlsx"  # 第一个Excel文件
 file2 = "./choicetemporal_batch2.xlsx"  # 第二个Excel文件，替换为实际路径
 dt= 20 #ms
 stim1_on = 200 #ms

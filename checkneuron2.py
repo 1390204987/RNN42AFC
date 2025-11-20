@@ -569,22 +569,26 @@ def neuralactivity_color_dm(model_dir,device,**kwargs):
     plt.figure(figsize=(10, 6))  # 宽度为10，高度为5
     figname = 'saccade_div'
     plt.title('saccade_div')
-    # L1_sactime = get_divergence(sacdir_list[select_0heading],neural_activity[:,select_0heading,:hidden1_size],times_relate,rule_name,rule=rule,
-                                # figname=figname,figname_append = kwargs['figname_append'],iarea=1,para=h1sac_para)
+    # L1_sactime = plot_divergence(sacdir_list,neural_activity[:,:,:hidden1_size],times_relate,rule_name,rule=rule,
+    #                             figname=figname,figname_append = kwargs['figname_append'],iarea=1,para=h1sac_para,doplot=1)
     # plot_divergence(sacdir_list[select_0heading],neural_activity[:,select_0heading,:hidden1_size],times_relate,rule_name,
                     # rule=rule,figname=figname,figname_append = kwargs['figname_append'],iarea=1,para=h1sac_para,doplot=1)
-    L1_sactime = plot_conditioned_divergence(sacdir_list,heading_per_trial,neural_activity[:,:,:hidden1_size],times_relate,rule_name,rule=rule,figname=figname,
+    cond_nothing = np.ones_like(sacdir_list)                
+    L1_sactime = plot_conditioned_divergence(sacdir_list,cond_nothing,neural_activity[:,:,:hidden1_size],times_relate,rule_name,rule=rule,figname=figname,
                     figname_append = kwargs['figname_append'],iarea=1,para=h1sac_para,doplot=1)
     # plot_conditioned_divergence(sacdir_list,heading_per_trial,neural_activity[:,:,:hidden1_size],times_relate,rule_name,rule=rule,figname=figname,figname_append = kwargs['figname_append'],iarea=1,para=h1abs_para)
 
     SetFigure(15)
     plt.show()
     if not hp.get("hidden_size2") is None:
+        # L2_sactime = plot_divergence(sacdir_list,neural_activity[:,:,hidden1_size:],times_relate,rule_name,rule=rule,
+        #                             figname=figname,figname_append = kwargs['figname_append'],iarea=2,para=h2sac_para,doplot=1)
+
         # plot_divergence(sacdir_list[select_0heading],neural_activity[:,select_0heading,hidden1_size:],times_relate,rule_name,
                         # rule=rule,figname=figname,figname_append = kwargs['figname_append'],iarea=2,para=h2sac_para,doplot=1)
         SetFigure(15)
         plt.show()
-        L2_sactime = plot_conditioned_divergence(sacdir_list,heading_per_trial,neural_activity[:,:,hidden1_size:],times_relate,rule_name,rule=rule,
+        L2_sactime = plot_conditioned_divergence(sacdir_list,cond_nothing,neural_activity[:,:,hidden1_size:],times_relate,rule_name,rule=rule,
                         figname=figname,figname_append = kwargs['figname_append'],iarea=2,para=h2sac_para,doplot=1)
     plt.savefig("./lunwenfigure/sac.svg")
     
