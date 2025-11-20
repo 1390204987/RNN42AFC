@@ -28,38 +28,61 @@ def simple_temporal_plot_combined(file1, file2,times_relate):
     df2_L1_shu = pd.read_excel(file2, sheet_name='shu_L1_sactemporal', index_col=0)
     df2_L2_shu = pd.read_excel(file2, sheet_name='shu_L2_sactemporal', index_col=0)
     
+    # df1_L1_temp = pd.read_excel(file1, sheet_name='L1_chocietemporal', index_col=0)
+    # df1_L2_temp = pd.read_excel(file1, sheet_name='L2_chocietemporal', index_col=0)
+    # df1_L1_shu = pd.read_excel(file1, sheet_name='shu_L1_choicetemporal', index_col=0)
+    # df1_L2_shu = pd.read_excel(file1, sheet_name='shu_L2_choicetemporal', index_col=0)
+    
+    # df2_L1_temp = pd.read_excel(file2, sheet_name='L1_chocietemporal', index_col=0)
+    # df2_L2_temp = pd.read_excel(file2, sheet_name='L2_chocietemporal', index_col=0)
+    # df2_L1_shu = pd.read_excel(file2, sheet_name='shu_L1_choicetemporal', index_col=0)
+    # df2_L2_shu = pd.read_excel(file2, sheet_name='shu_L2_choicetemporal', index_col=0)
+    
     time_points = np.arange(len(df1_L1_temp))
     time_points_ms = time_points * times_relate['dt']-times_relate['stim_on']
     
     # 创建两个图形：L1和L2
     fig, ax1 = plt.subplots(figsize=(8, 6))  # 创建图形和坐标轴 
+    # f1 = {'color': [x/255 + y*0.75*(1-1*2/4) for x, y in zip([139,10,80], [1,1,1])]}
+    # f2 = {'color': [x/255 + y*0.75*(1-1*2/4) for x, y in zip([139,10,80], [1,1,1])]}
+    
+    f1 = {'color': [x/255 for x in [30,114,255]],'linestyle':'-'}
+    f2 = {'color': [x/255 for x in [30,114,255]],'linestyle':'-'}
     # L1_sactemporal - 两个文件在同一坐标轴
     plot_combined_temporal(ax1, time_points_ms, 
                           df1_L1_temp, df1_L1_shu, 'File1',
                           df2_L1_temp, df2_L1_shu, 'File2',
-                          'L1_sactemporal')
+                          'L1_sactemporal',f1,f2)
     # 在stim1 on和off时间点画竖线
     ax1.axvline(x=0, color='gray', linestyle='--', alpha=0.7, label='Stim On')
     ax1.axvline(x=times_relate['stim_dur'], color='gray', linestyle='--', alpha=0.7, label='Stim Off')
     SetFigure(15)
-    plt.savefig("./lunwenfigure/cutfeedback_aftertrain.svg")
+    plt.savefig("./lunwenfigure/cutfeedback_aftertrainlayer1.svg")
     
     fig, ax2 = plt.subplots(figsize=(8, 6))  # 创建图形和坐标轴
+    # f1 = {'color': [x/255 for x in [139,10,80]]}
+    # f2 = {'color': [x/255 for x in [139,10,80]]}
+    f1 = {'color': [x/255 for x in [30,64,139]],'linestyle':'-'}
+    f2 = {'color': [x/255 for x in [30,64,139]],'linestyle':'-'}
     # L2_sactemporal - 两个文件在同一坐标轴
     plot_combined_temporal(ax2, time_points_ms,
                           df1_L2_temp, df1_L2_shu, 'File1',
                           df2_L2_temp, df2_L2_shu, 'File2',
-                          'L2_sactemporal')
+                          'L2_sactemporal',f1,f2)
     # 在stim1 on和off时间点画竖线
     ax1.axvline(x=0, color='gray', linestyle='--', alpha=0.7, label='Stim On')
     ax1.axvline(x=times_relate['stim_dur'], color='gray', linestyle='--', alpha=0.7, label='Stim Off')
-    
+    plt.savefig("./lunwenfigure/cutfeedback_aftertrainlayer2.svg")
     plt.show()
 
-def plot_combined_temporal(ax, time_points, temp_data1, shu_data1, label1, temp_data2, shu_data2, label2, title):
+def plot_combined_temporal(ax, time_points, temp_data1, shu_data1, label1, temp_data2, shu_data2, label2, title, f1,f2):
     """在同一坐标轴上绘制两个文件的时间序列"""
-    f1 = {'color': [x/255 + y*0.9*(1-1*2/4) for x, y in zip([0,0,139], [1,1,1])],'linestyle':'-'}
-    f2 = {'color': [x/255 + y*0.9*(1-1*2/4) for x, y in zip([0,0,139], [1,1,1])],'linestyle':'-'}
+    # f1 = {'color': [x/255 + y*0.9*(1-1*2/4) for x, y in zip([30,114,255], [1,1,1])],'linestyle':'-'}
+    # f2 = {'color': [x/255 + y*0.9*(1-1*2/4) for x, y in zip([30,114,255], [1,1,1])],'linestyle':'-'}
+    # f1 = {'color': [x/255 for x in [30,114,255]],'linestyle':'-'}
+    # f2 = {'color': [x/255 for x in [30,114,255]],'linestyle':'-'}
+    
+
     # 计算均值
     temp_mean1 = temp_data1.mean(axis=1)
     shu_mean1 = shu_data1.mean(axis=1)
@@ -149,6 +172,8 @@ def plot_combined_temporal(ax, time_points, temp_data1, shu_data1, label1, temp_
 # 使用示例
 file1 = "./sactemporal_batch2.xlsx"  # 第一个Excel文件
 file2 = "./sactemporal_batch5.xlsx"  # 第二个Excel文件，替换为实际路径
+# file1 = "./choicetemporal_batch2.xlsx"  # 第一个Excel文件
+# file2 = "./choicetemporal_batch2cut.xlsx"  # 第二个Excel文件，替换为实际路径
 dt= 20 #ms
 stim1_on = 200 #ms
 stim_times = 1000 #ms

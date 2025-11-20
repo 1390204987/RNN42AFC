@@ -153,8 +153,8 @@ class ReadinLinear(nn.Module):
         
         mask11 = np.ones((hidden_size1,in_feature_heading))
         mask12 = np.zeros((hidden_size2,in_feature_heading))
-        mask21 = np.zeros((hidden_size1,in_feature_targcolor)) 
-        mask22 = np.ones((hidden_size2,in_feature_targcolor)) 
+        mask21 = np.ones((hidden_size1,in_feature_targcolor)) 
+        mask22 = np.zeros((hidden_size2,in_feature_targcolor)) 
         mask31 = np.zeros((hidden_size1,in_feature_rules))
         mask32 = np.ones((hidden_size2,in_feature_rules))
         mask1 = np.concatenate((mask11,mask21,mask31),axis=1)

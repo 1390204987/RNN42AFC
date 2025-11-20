@@ -61,12 +61,13 @@ unique_zj = df[['Z', 'J']].drop_duplicates()
 
 # 添加共同的颜色条
 # 假设你的数据范围是 vmin, vmax
-# vmin = df[show_para].min()  # 最小值
-# vmax = df[show_para].max()  # 最大值
-vmin = -1500  # 最小值
-vmax = 1500  # 最大值
+vmin = df[show_para].min()  # 最小值
+vmax = df[show_para].max()  # 最大值
+# vmin = -1500  # 最小值
+# vmax = 1500  # 最大值
 # 创建 TwoSlopeNorm，设置 0 为分界点
-norm = TwoSlopeNorm(vmin=vmin, vcenter=0, vmax=vmax)
+# norm = TwoSlopeNorm(vmin=vmin, vcenter=0, vmax=vmax)
+norm = TwoSlopeNorm(vmin=vmin, vcenter=(vmin+vmax)/2,  vmax=vmax)
 # 选择一个 diverging colormap（如 'RdBu'，红色表示正，蓝色表示负）
 # cmap = 'RdBu'
 # cmap = 'coolwarm'
@@ -216,7 +217,7 @@ print(f"总数 (neg_num): {negative_num:.2f}")
 
 # 显示图形
 plt.show()
-plt.savefig("./lunwenfigure/l1_l2abs.svg")
+plt.savefig("./lunwenfigure/l2_l1abs.svg")
 
 # 计算每个J值的平均positive ratio
 j_values = [0, 1, 2, 3, 4]

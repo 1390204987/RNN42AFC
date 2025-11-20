@@ -36,8 +36,10 @@ def simple_temporal_plot_combined(file1, file2,times_relate):
     fig, ax1 = plt.subplots(figsize=(8, 6))  # 创建图形和坐标轴 
     # L1_sactemporal - 两个文件在同一坐标轴
 
-    layer2 = {'color': [x/255 for x in [0,0,139]],'linestyle':'-'}
-    layer1 = {'color': [x/255 + y*0.9*(1-1*2/4) for x, y in zip([0,0,139], [1,1,1])],'linestyle':'-'}
+    layer2 = {'color': [x/255 for x in [30,64,139]],'linestyle':'-'}
+    layer1 = {'color': [x/255 for x in [30,114,255]],'linestyle':'-'}
+    # layer1 = {'color': [x/255 for x in [0,191,255]],'linestyle':'-'}
+    # layer1 = {'color': [min(x/255 + y*1*(1-1*2/4),1) for x, y in zip([0,191,255], [1,1,1])],'linestyle':'-'}
 
     plot_combined_temporal(ax1, time_points_ms, 
                           df1_L1_temp, df1_L1_shu, 'File1',
@@ -153,7 +155,7 @@ def plot_combined_temporal(ax, time_points, temp_data1, shu_data1, label1, temp_
     
 # 使用简洁版本
 # 使用示例
-file1 = "./sactemporal_batch2.xlsx"  # 第一个Excel文件
+file1 = "./sactemporal_batch2_2.xlsx"  # 第一个Excel文件
 file2 = "./choicetemporal_batch2.xlsx"  # 第二个Excel文件，替换为实际路径
 dt= 20 #ms
 stim1_on = 200 #ms

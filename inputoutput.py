@@ -197,16 +197,16 @@ def neuralactivity_color_dm(model_dir,device='cpu',**kwargs):
     set_figure()
     plt.savefig("./lunwenfigure/colorinput2.svg")
     
-    plt.figure()
-    plt.imshow(x[:,selected_index,n_input_heading+n_input_targcolor:].T,cmap=cmap)
-    plt.xticks(ticks=[0,stim1_ons,stim1_end-1,1750/dt-1]) 
-    set_figure()
-    plt.savefig("./lunwenfigure/ruleinput.svg")
+    # plt.figure()
+    # plt.imshow(x[:,selected_index,n_input_heading+n_input_targcolor:].T,cmap=cmap)
+    # plt.xticks(ticks=[0,stim1_ons,stim1_end-1,1750/dt-1]) 
+    # set_figure()
+    # plt.savefig("./lunwenfigure/ruleinput.svg")
     
     plt.figure()
-    plt.imshow(y[:,selected_index,:].T,cmap=cmap)
+    plt.imshow(y[:,selected_index,1:].T,cmap=cmap)
     plt.xticks(ticks=[0,stim1_ons,stim1_end,1750/dt-1]) 
-    plt.yticks(ticks = [0,8,16])
+    plt.yticks(ticks = [0,7,15])
     set_figure()
     plt.savefig("./lunwenfigure/expectoutput.svg")
     

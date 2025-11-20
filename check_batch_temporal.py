@@ -66,7 +66,7 @@ def _neuralactivity_dm(model_dir, rule, stim_mod, params_list, batch_shape,devic
     # hp['sigma_rec1']=0.1
     # hp['sigma_rec2']=0.1
     # # hp['fforwardstren']=0.1
-    # hp['fbackstren']=0
+    hp['fbackstren']=0
     # hp['sigma_x'] = 0.1,
     net = Net(hp,device,dt = hp['dt']).to(device)
     #remove prefixe "module"
@@ -310,7 +310,7 @@ filespath = './checkpoint_batchnew2'
 # filespath = './check'
 nets = list_files_in_directory(filespath)
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-# df = pd.DataFrame(columns=["netid","L1_sacROC","L2_sacROC"])
+
 
 # 创建两个DataFrame来分别存储L1和L2 roc数据
 df_L1 = pd.DataFrame()
@@ -325,7 +325,11 @@ df_L2shu_temporal = pd.DataFrame()
 for net in nets:
     model_dir = filespath + '/' + net
     # L1_sacROC, L2_sacROC,L1_sactemporal,L2_sactemporal,L1_shuffle_sac,L2_shuffle_sac = neuralactivity_color_dm(model_dir, device)
+    # if np.all(np.isnan(L1_sactemporal)):
+        # continue
     L1_choicetemporal,L2_choicetemporal,L1_shuffle_choice,L2_shuffle_choice = neuralactivity_color_dm(model_dir, device)
+    if np.all(np.isnan(L1_choicetemporal)):
+        continue
     numbersinnetname = re.findall(r'\d+', net)
     netid = numbersinnetname[0]
     
@@ -350,19 +354,19 @@ for net in nets:
     
     
 # # 保存到Excel的两个不同sheet中
-# with pd.ExcelWriter("./sacROC_batch6.xlsx") as writer:
+# with pd.ExcelWriter("./sacROC_batch2_2cut.xlsx") as writer:
 #     df_L1.to_excel(writer, sheet_name='L1_sacROC', index=False)
 #     df_L2.to_excel(writer, sheet_name='L2_sacROC', index=False)
     
 # # 保存到Excel的两个不同sheet中
-# with pd.ExcelWriter("./sactemporal_batch6.xlsx") as writer:
+# with pd.ExcelWriter("./sactemporal_batch2_2cut.xlsx") as writer:
 #     df_L1temporal.to_excel(writer, sheet_name='L1_sactemporal', index=False)
 #     df_L2temporal.to_excel(writer, sheet_name='L2_sactemporal', index=False)
 #     df_L1shu_temporal.to_excel(writer, sheet_name='shu_L1_sactemporal', index=False)
 #     df_L2shu_temporal.to_excel(writer, sheet_name='shu_L2_sactemporal', index=False)
     
 # 保存到Excel的两个不同sheet中
-with pd.ExcelWriter("./choicetemporal_batch2.xlsx") as writer:
+with pd.ExcelWriter("./choicetemporal_batch2cut.xlsx") as writer:
     df_L1temporal.to_excel(writer, sheet_name='L1_chocietemporal', index=False)
     df_L2temporal.to_excel(writer, sheet_name='L2_chocietemporal', index=False)
     df_L1shu_temporal.to_excel(writer, sheet_name='shu_L1_choicetemporal', index=False)

@@ -49,7 +49,7 @@ from mynetwork_new3 import Net
 
 plt.close('all')
 
-save = True
+save = False
 THETA = 0.3 * np.pi
 
 # From sns.dark_palette("light blue", 3, input="xkcd")
@@ -308,14 +308,15 @@ def plot_psychometric_choice(xdatas,ydatas,labels,colors,**kwargs):
                 ha='left', va='top',
                 bbox=dict(facecolor='white', edgecolor='none', alpha=0.7),
                 clip_on=False) 
-    SetFigure(15)        
-    plt.show()
+    # SetFigure(15)        
+    # plt.show()
 
-    figname = './batchfigure/'+rule_name[kwargs['rule']].replace(' ','') + '/'+kwargs['figname_append']+'/'
+
     # if 'figname_append' in kwargs:
     #     figname += kwargs['figname_append']
 
     if save:
+        figname = './batchfigure/'+rule_name[kwargs['rule']].replace(' ','') + '/'+kwargs['figname_append']+'/'
         os.makedirs(figname,exist_ok=True)
         plt.savefig(figname+'psycho_curve.png', transparent=True)
 
