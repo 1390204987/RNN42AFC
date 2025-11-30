@@ -76,13 +76,13 @@ def get_default_hp(ruleset):
             'n_output': n_output,
             'alpha': 0.1,
             # input noise
-            'sigma_x': 0.1,
+            'sigma_x': 0.05,
             'sigma_rec1':0.1,
              'sigma_rec2':0.1,
             'sigma_feedforward':0.1,
             'sigma_feedback':0.1,
             # recurrent connectivity
-            'recur1':1,
+            'recur1':0.1,
             'recur2':1,
             'fforwardstren':1,
             'fbackstren':1,                
@@ -105,8 +105,8 @@ def get_default_hp(ruleset):
             # intelligent synapses parameters, tuple (c, ksi)
             'c_intsyn': 0.1,
             'ksi_intsyn': 0.01,            
-            'hidden_size1': 256,
-            'hidden_size2': 128,
+            'hidden_size1': 128,
+            'hidden_size2': 256,
             'hidden_size3':64}
             # 'hidden_size3': 32}
             # 'hidden_size1': 64}
@@ -529,7 +529,7 @@ def train_para(device,hp,log,net,rule_train_now,netname,savepath,
         
     return task_trainagain
     
-netname = 'color2h12'
+netname = 'checkgpu128_256check'
 # # netname = 'checkrelu'
 savepath = './checkpoint/'
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")

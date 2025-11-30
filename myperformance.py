@@ -256,6 +256,8 @@ def plot_psychometric_choice(xdatas,ydatas,labels,colors,**kwargs):
             ax.plot(x_plot, cdf_gaussian(x_plot,mu,sigma), label = labels[i],
                     linewidth=1, color = colors[i])
         except:
+            mu = np.nan
+            sigma = np.nan
             pass
     bias = mu
     # Compute threshold (difference from 50% to 75%)

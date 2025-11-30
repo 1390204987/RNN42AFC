@@ -206,7 +206,7 @@ def list_files_in_directory(directory):
              if os.path.isfile(os.path.join(directory, file)) and file.endswith('.t7')]        
     return files
 
-filespath = './checkpoint_batchnew2'
+filespath = './checkpoint_batchnew1'
 # filespath = './check'
 nets = list_files_in_directory(filespath)
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -242,7 +242,7 @@ for net in nets:
     df_sacydatas[col_name] = sac_ydatas[0]
     
 # 保存到Excel的两个不同sheet中
-with pd.ExcelWriter("./behavior_batch2.xlsx") as writer:
+with pd.ExcelWriter("./behavior_batch1.xlsx") as writer:
     df_correct_rate.to_excel(writer, sheet_name='correct_rate', index=False)
     df_behavior_bias.to_excel(writer, sheet_name='behavior_bias', index=False)
     df_behavior_threshold.to_excel(writer, sheet_name='behavior_threshold', index=False)      

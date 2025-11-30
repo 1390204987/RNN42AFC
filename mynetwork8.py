@@ -254,8 +254,8 @@ class EIRNN(nn.Module):
         state[:,:self.hidden_size1] += self._sigma_rec1*torch.randn_like(state[:,:self.hidden_size1])
         state[:,self.hidden_size1:] += self._sigma_rec2*torch.randn_like(state[:,self.hidden_size1:])
         
-        state[:,:self.hidden_size1] += self._sigma_rec1*torch.randn_like(state[:,:self.hidden_size1])*state[:,:self.hidden_size1]
-        state[:,self.hidden_size1:] += self._sigma_rec2*torch.randn_like(state[:,self.hidden_size1:])*state[:,self.hidden_size1:]
+        # state[:,:self.hidden_size1] += self._sigma_rec1*torch.randn_like(state[:,:self.hidden_size1])*state[:,:self.hidden_size1]
+        # state[:,self.hidden_size1:] += self._sigma_rec2*torch.randn_like(state[:,self.hidden_size1:])*state[:,self.hidden_size1:]
         # output = F.tanh(state)
         output = F.relu(state)
         return state, output															 

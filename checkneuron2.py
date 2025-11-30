@@ -73,11 +73,11 @@ def _neuralactivity_dm(model_dir, rule, stim_mod, params_list, batch_shape,devic
     modelparams = torch.load(model_dir,weights_only=False)
     state_dict = modelparams["state_dict"]
     hp = modelparams["hp"]
-    # hp["sigma_x"] = 0.1
-    # hp['sigma_rec1']=0.1
-    # hp['sigma_rec2']=0.1
-    # # hp['fforwardstren']=1
-    # hp['fbackstren']=0
+    hp["sigma_x"] = 0.05
+    hp['sigma_rec1']=0.15
+    hp['sigma_rec2']=0.15
+    # hp['fforwardstren']=2
+    hp['fbackstren']=1
     # hp['sigma_x'] = 0.1,
     net = Net(hp,device,dt = hp['dt']).to(device)
     #remove prefixe "module"
@@ -319,7 +319,7 @@ def neuralactivity_color_dm(model_dir,device,**kwargs):
     stim3_locs = (stim2_locs+np.pi)%(2*np.pi)
     
     params_list = list()
-    stim1_times = [1000]
+    stim1_times = [1500]
     
     for stim1_time in stim1_times:
         params = {'stim1_locs': stim1_locs,
@@ -573,8 +573,10 @@ def neuralactivity_color_dm(model_dir,device,**kwargs):
     #                             figname=figname,figname_append = kwargs['figname_append'],iarea=1,para=h1sac_para,doplot=1)
     # plot_divergence(sacdir_list[select_0heading],neural_activity[:,select_0heading,:hidden1_size],times_relate,rule_name,
                     # rule=rule,figname=figname,figname_append = kwargs['figname_append'],iarea=1,para=h1sac_para,doplot=1)
-    cond_nothing = np.ones_like(sacdir_list)                
-    L1_sactime = plot_conditioned_divergence(sacdir_list,cond_nothing,neural_activity[:,:,:hidden1_size],times_relate,rule_name,rule=rule,figname=figname,
+    cond_nothing = np.ones_like(sacdir_list)      
+    # L1_sactime = plot_conditioned_divergence(sacdir_list[select_0heading],cond_nothing[select_0heading],neural_activity[:,select_0heading,:hidden1_size],times_relate,rule_name,rule=rule,figname=figname,
+                   # figname_append = kwargs['figname_append'],iarea=1,para=h1sac_para,doplot=1)       
+    L1_sactime = plot_conditioned_divergence(sacdir_list,heading_per_trial,neural_activity[:,:,:hidden1_size],times_relate,rule_name,rule=rule,figname=figname,
                     figname_append = kwargs['figname_append'],iarea=1,para=h1sac_para,doplot=1)
     # plot_conditioned_divergence(sacdir_list,heading_per_trial,neural_activity[:,:,:hidden1_size],times_relate,rule_name,rule=rule,figname=figname,figname_append = kwargs['figname_append'],iarea=1,para=h1abs_para)
 
@@ -588,13 +590,17 @@ def neuralactivity_color_dm(model_dir,device,**kwargs):
                         # rule=rule,figname=figname,figname_append = kwargs['figname_append'],iarea=2,para=h2sac_para,doplot=1)
         SetFigure(15)
         plt.show()
-        L2_sactime = plot_conditioned_divergence(sacdir_list,cond_nothing,neural_activity[:,:,hidden1_size:],times_relate,rule_name,rule=rule,
+        # L2_sactime = plot_conditioned_divergence(sacdir_list[select_0heading],cond_nothing[select_0heading],neural_activity[:,select_0heading,hidden1_size:],times_relate,rule_name,rule=rule,
+                        # figname=figname,figname_append = kwargs['figname_append'],iarea=2,para=h2sac_para,doplot=1)
+        L2_sactime = plot_conditioned_divergence(sacdir_list,heading_per_trial,neural_activity[:,:,hidden1_size:],times_relate,rule_name,rule=rule,
                         figname=figname,figname_append = kwargs['figname_append'],iarea=2,para=h2sac_para,doplot=1)
     plt.savefig("./lunwenfigure/sac.svg")
     
     plt.figure(figsize=(10, 6))
     figname = 'choice_div'
     plt.title('choice_div')
+    # L1_choicetime = plot_conditioned_divergence(choice_per_trial[select_0heading],heading_per_trial[select_0heading],neural_activity[:,select_0heading,:hidden1_size],times_relate,rule_name,rule=rule,
+                                # figname=figname,figname_append = kwargs['figname_append'],iarea=1,para=h1abs_para,doplot=1)
     L1_choicetime = plot_conditioned_divergence(choice_per_trial,heading_per_trial,neural_activity[:,:,:hidden1_size],times_relate,rule_name,rule=rule,
                                 figname=figname,figname_append = kwargs['figname_append'],iarea=1,para=h1abs_para,doplot=1)
     heading0_choice = choice_per_trial[select_0heading]
@@ -604,9 +610,11 @@ def neuralactivity_color_dm(model_dir,device,**kwargs):
                     # figname=figname,figname_append = kwargs['figname_append'],iarea=1,para=h1abs_para,doplot=1)
     SetFigure(15)
     plt.show()
-    # L1_choicetime = get_divergence(heading0_choice,heading0_h1_activity,times_relate,rule_name,rule=rule,
-                                   # figname=figname,figname_append = kwargs['figname_append'],iarea=1,para=h1abs_para,doplot=1)
+    L1_choicetime = get_divergence(heading0_choice,heading0_h1_activity,times_relate,rule_name,rule=rule,
+                                   figname=figname,figname_append = kwargs['figname_append'],iarea=1,para=h1abs_para,doplot=1)
     if not hp.get("hidden_size2") is None:
+        # L2_choicetime = plot_conditioned_divergence(choice_per_trial[select_0heading],heading_per_trial[select_0heading],neural_activity[:,select_0heading,hidden1_size:],times_relate,rule_name,rule=rule,
+                                    # figname=figname,figname_append = kwargs['figname_append'],iarea=2,para=h2abs_para,doplot=1)
         L2_choicetime = plot_conditioned_divergence(choice_per_trial,heading_per_trial,neural_activity[:,:,hidden1_size:],times_relate,rule_name,rule=rule,
                                     figname=figname,figname_append = kwargs['figname_append'],iarea=2,para=h2abs_para,doplot=1)
         # plot_divergence(heading0_choice,heading0_h2_activity,times_relate,rule_name,rule=rule,
@@ -658,10 +666,11 @@ def plot_corr_heading_color_sac(heading_selectivity,saccade_selectivity,color_se
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 for i in [0]:
     figname_suffix = f'checkgpu/{i}'
-    model_dir = './checkpoint/color2h1.t7'     
+    model_dir = './checkpoint/checkgpu128_256check.t7'   
+    # model_dir = './checkpoint/color2h1.t7'     
     # model_dir = './checkpoint_color2h1/0031colorhdnet8.t7'
     # model_dir = './checkpoint/onlyfeedforward.t7'      
-    # model_dir = './checkpoint_batchnew1/0000colorhdnet8.t7'     
+    # model_dir = './checkpoint_batchnew1/4433colorhdnet8.t7'     
     # model_dir = './checkpoint_scaled/4411colorhdnet8_feedback_x2.t7'  
     # model_dir = 'I:/model/data_simulation/neuralactivityinputtask/checkpoint_batchnew1/0421colorhdnet4.t7'
     neuralactivity_color_dm(model_dir,device,figname_append=figname_suffix) 
